@@ -223,6 +223,8 @@ Annotate which items to keep/discard due to cloze, and export.
 ```{r}
 dat_cloze_full$keep_item <- ifelse(dat_cloze_full$item %in% dat_keep$item,
                                    "keep", "discard")
+dat_cloze_full <- dat_cloze_full %>% 
+  arrange(item, cond_label)
 write.csv(dat_cloze_full, "nicenboim_stone_cloze_corrected.csv", row.names = FALSE)
 ```
 
