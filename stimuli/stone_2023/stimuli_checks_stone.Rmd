@@ -38,8 +38,9 @@ Read the stimuli, filter for the relevant conditions and check the number of ite
 ```{r read-stimuli}
 # Read in the data
 dat <- read.csv("experimental_stimuli.tsv", header=TRUE, sep = "\t")
+# dat <- read.csv("cloze_corrected_keep.csv", header=TRUE)
 
-dat <- dat %>% 
+dat <- dat %>%
   filter(cond_label %in% c("a", "b"))
 
 # How many items are there in total?
@@ -50,6 +51,7 @@ Check the distribution of Cloze probabilities:
 
 ```{r cloze-by-cond}
 # Range of cloze values in each condition
+# Stone et al. "unsmoothed"
 dat %>% 
   dplyr::group_by(cond_label) %>% 
   dplyr::summarise(MeanCloze = mean(cloze.target),
@@ -57,8 +59,13 @@ dat %>%
                    MinCloze = min(cloze.target),
                    MaxCloze = max(cloze.target))
 
-# dat %>% summarySE(measurevar="cloze.target_smth",
-#                   groupvars = "cond_label")
+# Stone et al. smoothed
+dat %>% 
+  dplyr::group_by(cond_label) %>% 
+  dplyr::summarise(MeanCloze = mean(cloze.target_smth),
+                   ClozeSD = sd(cloze.target_smth),
+                   MinCloze = min(cloze.target_smth),
+                   MaxCloze = max(cloze.target_smth))
 
 # Histogram of cloze probs
 ggplot(data=dat,
@@ -77,6 +84,21 @@ ggplot(data=dat,
        fill = "Condition") +
   theme_minimal()
 ```
+
+Some items have a Cloze probability of 1.0, which should not be possible, given that an alternative target should be attested.  
+Manually check these items:
+
+```{r check-1-cloze}
+dat_impossible_cloze <- dat %>% 
+  filter(cloze.target == 1.0)
+dat_impossible_cloze <- dat %>% 
+  filter(item %in% dat_impossible_cloze$item)
+  #%>% select(item, cond_label, cloze.target, cloze.target_smth, entropy)
+
+length(unique(dat_impossible_cloze$item))
+```
+
+
 
 # Target length and frequency by condition
 
@@ -153,28 +175,6 @@ head(duplicates, n = 20)
 ```
 
 
-# Similarity metrics
-
-## Target-context similarity
-
-Check Stone et al. context similarity (LSA):
-
-```{r check-cosine-context}
-dat %>% 
-  dplyr::group_by(cond_label) %>% 
-  dplyr::summarise(MeanSimilarity = mean(cosine_targetContext, na.rm = TRUE),
-                   SimilaritySD = sd(cosine_targetContext, na.rm = TRUE),
-                   MinSimilarity = min(cosine_targetContext, na.rm = TRUE),
-                   MaxSimilarity = max(cosine_targetContext, na.rm = TRUE))
-```
-
-## Target-target similarity
-
-Add FastText embeddings to check similarity between the two targets:
-
-TODO
-
-
 # Export for surprisal and embedding annotations
 
 Export the preprocessed stimuli in the format required by the surprisal script.
@@ -203,9 +203,25 @@ write.csv(dat_for_embeddings, 'stimuli_for_embeddings.csv', row.names = FALSE)
 ```
 
 
-# Embeddings
+# Similarity metrics
 
-## Fasttext
+## Target-context similarity
+
+Check Stone et al. context similarity (LSA):
+
+```{r check-cosine-context}
+dat %>% 
+  dplyr::group_by(cond_label) %>% 
+  dplyr::summarise(MeanSimilarity = mean(cosine_targetContext, na.rm = TRUE),
+                   SimilaritySD = sd(cosine_targetContext, na.rm = TRUE),
+                   MinSimilarity = min(cosine_targetContext, na.rm = TRUE),
+                   MaxSimilarity = max(cosine_targetContext, na.rm = TRUE))
+```
+
+## Target-target similarity: embeddings
+
+
+### Fasttext
 
 Read embeddings and add to stimuli:
 
@@ -291,6 +307,9 @@ length(unique(fasttext_high$item))
 ```
 
 Using a threshold of $>=0.40$ for exclusion would however result in the exclusion of 84 items.
+
+
+### Glove 
 
 TODO: check the GloVe embeddings as well and exclude stimuli which exceeded a threshold in either fastText or GloVe; perhaps this helps in detecting these items.
 
@@ -535,3 +554,11 @@ surprisal_by_cond(dat, "surprisal_leo_13b")
 ```
 
 For Leo-13B, this is further reduced to 22 items with surprisal A >= B.
+
+
+# Export with surprisal and embedding annotations
+
+```{r export-final}
+write.csv(dat, 'stimuli_stone_preprocessed_surprisal.csv', row.names = FALSE)
+```
+
