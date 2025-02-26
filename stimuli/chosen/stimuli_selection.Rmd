@@ -447,15 +447,15 @@ For Leo-13B, there are also 17 items with surprisal A >= B.
 Check the items for which the strongest model (leo13b) yielded surprisal b <= a:
 
 ```{r check-bad-surprisal-items}
-dat_surprisal <- dat %>% 
+dat_surprisal_leo <- dat %>% 
   dplyr::group_by(item, cond_label) %>%
   dplyr::summarise("surprisal_leo_13b" := mean(surprisal_leo_13b), .groups = "drop") %>%
   pivot_wider(names_from = cond_label, values_from = surprisal_leo_13b)
 
-dat_weak <- dat_surprisal %>%
+dat_weak_leo <- dat_surprisal_leo %>%
   filter(a >= b)
-dat_weak <- dat %>% 
-  filter(item %in% dat_weak$item) %>% 
+dat_weak_leo <- dat %>% 
+  filter(item %in% dat_weak_leo$item) %>% 
   select(item, cond_label, sentence_target, noun,
          target_length, ZipfSUBTLEX,
           cloze_probability,

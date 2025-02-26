@@ -49,6 +49,9 @@ cloze <- dat %>%
 
 head(cloze)
 
+# Export for individual analysis
+write.csv(cloze, "nicenboim_cloze_allanswers.csv", row.names = FALSE)
+
 cloze <- cloze %>% 
   dplyr::filter(condition == "Constraining_a") %>% 
   dplyr::rename(clozenoun = stemnoun)
@@ -140,8 +143,8 @@ Delete these items:
 ```{r}
 items_to_delete <- c(13, 76, 44, 28, 78, 21, 181, 276)
 
-dat_cloze_full <- dat_cloze_full %>% 
-  filter(!(item %in% items_to_delete))
+# dat_cloze_full <- dat_cloze_full %>% 
+#   filter(!(item %in% items_to_delete))
 ```
 
 
@@ -197,7 +200,8 @@ Remove the zero cloze target items:
 
 ```{r}
 dat_keep <- dat_cloze_full %>%
-  filter(!(item %in% dat_zero_cloze$item))
+  filter(!(item %in% dat_zero_cloze$item) &
+           !(dat_cloze_full$item %in% items_to_delete))
 length(unique(dat_keep$item))
 
 dat_keep %>%
