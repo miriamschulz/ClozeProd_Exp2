@@ -1,0 +1,228 @@
+---
+title: "Correct the Cloze probabilities"
+author: "Miriam Schulz"
+date: "2025-02-25"
+output:
+  html_document:
+    number_sections: true
+    toc: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r libraries, message=FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+rm(list = ls())
+```
+
+
+# About
+
+This script checks the Stone et al. 2023 target cloze values with respect to the Nicenboim et al. 2020 Cloze data,
+and corrects them, removing items with zero cloze targets.
+
+
+# Calculate Cloze manually
+
+Read the stimuli, filter for the relevant conditions and check the number of items:
+
+```{r read-data}
+# Read in the data
+dat <- read.csv("answers_annotated_before_noun_CORRECTED.tsv", header=TRUE, sep = "\t")
+stim <- read.csv("stimuli_stone_preprocessed_surprisal.csv", header=TRUE)
+```
+
+```{r}
+# Manually compute cloze probabilities
+cloze <- dat %>%
+  dplyr::group_by(item, condition) %>%  # Group by item and condition first
+  dplyr::mutate(total_responses = n()) %>%  # Count total responses per item-condition
+  dplyr::group_by(item, condition, stemnoun) %>%  # Then group by response
+  dplyr::summarise(count = n(), total_responses = first(total_responses), .groups = "drop") %>%
+  dplyr::mutate(cloze_probability = count / total_responses)
+
+head(cloze)
+
+cloze <- cloze %>% 
+  dplyr::filter(condition == "Constraining_a") %>% 
+  dplyr::rename(clozenoun = stemnoun)
+
+# Ad the cloze probabilities to the stimuli
+dat_cloze <- merge(stim, cloze,
+                   by = c("item"),
+                   all.x = TRUE,
+                   all.y = FALSE)
+
+dat_cloze <- dat_cloze %>% 
+  arrange(item, cond_label)
+
+# Keep only those cloze responses that match a target in the items,
+# i.e., discard non-target cloze responses;
+# however, this will also remove all zero cloze B conditions!
+dat_cloze <- dat_cloze %>%
+  filter(stemnoun == clozenoun | noun == clozenoun)
+length(unique(dat_cloze$item))  # some items missing
+
+# summary(as.factor(dat_cloze$noun == dat_cloze$clozenoun))
+# summary(as.factor(dat_cloze$stemnoun == dat_cloze$clozenoun))
+
+# To recover the missing zero cloze b conditions, create a new data frame 
+# from the stimuli containing only those.
+# First, reduce the data frame to the columns from the stimuli file:
+dat_cloze_reduced <- dat_cloze %>% 
+  select(colnames(stim))
+# Then, get the rows that are in the stimuli but not in the cloze annotated
+# stimuli:
+stim_missing <- dplyr::anti_join(stim, dat_cloze_reduced,
+                                 by = c("item", "cond_label"))
+
+# Finally, manually fill in the columns from the cloze data set, 
+# like zero cloze probability:
+setdiff(colnames(dat_cloze), colnames(stim_missing))
+stim_missing$condition <- "Constraining_a"
+stim_missing$clozenoun <- "NA"
+stim_missing$count <- 0
+stim_missing$total_responses <- "NA"
+stim_missing$cloze_probability <- 0.0
+
+# Merge
+dat_cloze_full <- rbind(dat_cloze, stim_missing)
+dat_cloze_full <- unique(dat_cloze_full)
+length(unique(dat_cloze_full$item))  # all items are there now
+xtabs(~ cond_label, dat_cloze_full)  # this is concerning...
+xtabs(~ item + cond_label, dat_cloze_full)  # 2x 71b, 2x 132a and 133a
+dat_duplicates <- dat_cloze_full %>% 
+  filter(item %in% c(71, 132, 133)) %>% 
+  arrange(item, cond_label)
+# write.csv(dat_duplicates, "delete.csv")
+
+# There is an issue with 3 items, the clozenoun contains different labels.
+# Manually delete the duplicates for these items:
+dat_cloze_full <- dat_cloze_full %>% 
+  filter(!(item == 71 & clozenoun == "Verkäuferin")) %>% 
+  filter(!(item == 132 & clozenoun == "Fotografen")) %>% 
+  filter(!(item == 133 & clozenoun == "Briefmarke"))
+
+range(xtabs(~ item + cond_label, dat_cloze_full))
+xtabs(~ cond_label, dat_cloze_full)
+```
+
+
+# Check problematic items
+
+Check items with problematic Cloze values and inspect them manually (looking at the raw Cloze responses in `answers_annotated_before_noun.tsv`; corrections are saved in `answers_annotated_before_noun_CORRECTED.tsv`).
+
+```{r}
+dat_impossible <- dat_cloze_full %>% 
+  filter(cond_label == "a" & cloze_probability < 0.2)
+
+dat_cloze_full$cloze_probability <- round(dat_cloze_full$cloze_probability, 2)
+summary(dat_cloze_full$cloze.target == dat_cloze_full$cloze_probability)
+dat_inspect <- dat_cloze_full %>% 
+  filter(cloze.target != cloze_probability) %>% 
+  select(item, cond_label,
+         noun, stemnoun, clozenoun,
+         cloze.target, cloze.target_smth, cloze_probability,
+         count, total_responses) %>% 
+  arrange(item, cond_label)
+```
+
+Some items seem to have made-up cloze probabilities, OR their cloze probabilities were derived from other targets than the ones used in a. 
+
+Delete these items:
+
+```{r}
+items_to_delete <- c(13, 76, 44, 28, 78, 21, 181, 276)
+
+dat_cloze_full <- dat_cloze_full %>% 
+  filter(!(item %in% items_to_delete))
+```
+
+
+# Stone et al. vs. corrected Cloze probabilities
+
+Check cloze calculated by Stone vs. cloze as I calculated:
+
+```{r}
+# Stone cloze probs
+dat_cloze_full %>%
+  dplyr::group_by(cond_label) %>%
+  dplyr::summarise(MeanCloze = mean(cloze.target),
+                   ClozeSD = sd(cloze.target),
+                   MinCloze = min(cloze.target),
+                   MaxCloze = max(cloze.target))
+
+# My cloze probs
+dat_cloze_full %>%
+  dplyr::group_by(cond_label) %>%
+  dplyr::summarise(MeanCloze = mean(cloze_probability),
+                   ClozeSD = sd(cloze_probability, na.rm = TRUE),
+                   MinCloze = min(cloze_probability),
+                   MaxCloze = max(cloze_probability))
+```
+
+
+# Remove zero cloze items
+
+Check how many items have zero cloze:
+
+```{r}
+dat_zero_cloze <- dat_cloze_full %>% 
+  filter(cloze_probability == 0)
+summary(as.factor(dat_zero_cloze$cond_label))
+nrow(dat_zero_cloze)
+
+length(unique(dat_zero_cloze$item)) / length(unique(dat_cloze_full$item)) * 100
+```
+
+~27% of all items have a zero cloze target.
+
+```{r}
+ggplot(data=dat_cloze_full,
+       aes(cloze_probability, fill = cond_label, color = cond_label)) + 
+  geom_density(alpha = 0.6) + 
+  scale_fill_manual(values = c("navy", "magenta3")) +
+  scale_color_manual(values = c("navy", "magenta3"), guide = "none") +
+  labs(title = "Cloze probabilities by condition",
+       fill = "Condition")
+```
+
+Remove the zero cloze target items:
+
+```{r}
+dat_keep <- dat_cloze_full %>%
+  filter(!(item %in% dat_zero_cloze$item))
+length(unique(dat_keep$item))
+
+dat_keep %>%
+  dplyr::group_by(cond_label) %>%
+  dplyr::summarise(MeanCloze = mean(cloze_probability),
+                   ClozeSD = sd(cloze_probability, na.rm = TRUE),
+                   MinCloze = min(cloze_probability),
+                   MaxCloze = max(cloze_probability))
+
+ggplot(data=dat_keep,
+       aes(cloze_probability, fill = cond_label, color = cond_label)) + 
+  geom_density(alpha = 0.6) + 
+  scale_fill_manual(values = c("navy", "magenta3")) +
+  scale_color_manual(values = c("navy", "magenta3"), guide = "none") +
+  labs(title = "Cloze probabilities by condition",
+       fill = "Condition")
+```
+
+# Export
+
+Annotate which items to keep/discard due to cloze, and export.
+
+```{r}
+dat_cloze_full$keep_item <- ifelse(dat_cloze_full$item %in% dat_keep$item,
+                                   "keep", "discard")
+write.csv(dat_cloze_full, "nicenboim_stone_cloze_corrected.csv", row.names = FALSE)
+```
+

@@ -1,0 +1,442 @@
+---
+title: "Check the experimental stimuli"
+author: "Miriam Schulz"
+date: "2025-02-19"
+output:
+  html_document:
+    number_sections: true
+    toc: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r libraries, message=FALSE}
+library("tidyverse")
+library("ggplot2")
+library("Rmisc")
+library(stringr)
+library(rlang)
+library(corrplot)
+
+rm(list = ls())
+```
+
+
+# About
+
+This script checks the Stone et al. 2023 experimental stimuli and adds + analyzes metrics like similarity scores between the target words and target noun surprisal by 4 different LLMs.
+
+
+# Inspect cloze probability per condition
+
+Read the stimuli, filter for the relevant conditions and check the number of items:
+
+```{r read-stimuli}
+# Read in the data
+# dat <- read.csv("experimental_stimuli.tsv", header=TRUE, sep = "\t")
+dat <- read.csv("nicenboim_stone_cloze_corrected.csv", header=TRUE)
+
+dat <- dat %>%
+  filter(cond_label %in% c("a", "b"))
+
+# How many items are there in total?
+length(unique(dat$item))
+
+# Remove items with zero cloze
+dat_remove <- dat %>% 
+  filter(keep_item == "discard")
+dat <- dat %>% 
+  filter(keep_item == "keep")
+```
+
+Check the distribution of Cloze probabilities:
+
+```{r cloze-by-cond}
+# Range of cloze values in each condition
+# Stone et al. "unsmoothed"
+dat %>% 
+  dplyr::group_by(cond_label) %>% 
+  dplyr::summarise(MeanCloze = mean(cloze.target),
+                   ClozeSD = sd(cloze.target),
+                   MinCloze = min(cloze.target),
+                   MaxCloze = max(cloze.target))
+
+# Stone et al. smoothed
+dat %>% 
+  dplyr::group_by(cond_label) %>% 
+  dplyr::summarise(MeanCloze = mean(cloze.target_smth),
+                   ClozeSD = sd(cloze.target_smth),
+                   MinCloze = min(cloze.target_smth),
+                   MaxCloze = max(cloze.target_smth))
+
+# Manually recalculated
+dat %>%
+  dplyr::group_by(cond_label) %>%
+  dplyr::summarise(MeanCloze = mean(cloze_probability),
+                   ClozeSD = sd(cloze_probability),
+                   MinCloze = min(cloze_probability),
+                   MaxCloze = max(cloze_probability))
+
+# Histogram of cloze probs
+ggplot(data=dat,
+       aes(cloze_probability)) + 
+  geom_histogram(bins = 10, fill = "steelblue", color = "steelblue4") + 
+  labs(title = "Histogram of cloze probabilities") +
+  theme_minimal()
+
+# Density plot
+ggplot(data=dat,
+       aes(cloze_probability, fill = cond_label, color = cond_label)) + 
+  geom_density(alpha = 0.6) + 
+  scale_fill_manual(values = c("navy", "magenta3")) +
+  scale_color_manual(values = c("navy", "magenta3"), guide = "none") +
+  labs(title = "Cloze probabilities by condition",
+       fill = "Condition") +
+  theme_minimal()
+```
+
+
+
+# Target length and frequency by condition
+
+```{r check-cloze-freq-length}
+dat %>% 
+  dplyr::group_by(cond_label) %>% 
+  dplyr::summarise(MeanLength = mean(target_length),
+                   MinLength = min(target_length),
+                   MaxLength = max(target_length),
+                   SDLength = sd(target_length))
+
+dat %>% 
+  dplyr::group_by(cond_label) %>% 
+  dplyr::summarise(MeanFreq = mean(as.numeric(ZipfSUBTLEX), na.rm = TRUE),
+                   MinFreq = min(as.numeric(ZipfSUBTLEX), na.rm = TRUE),
+                   MaxFreq = max(as.numeric(ZipfSUBTLEX), na.rm = TRUE),
+                   SDFreq = sd(as.numeric(ZipfSUBTLEX), na.rm = TRUE))
+```
+
+A NOTE OF CAUTION: Many frequencies could not be found in the German Subtlex corpus, therefore the above frequency estimate is to be treated with caution.
+
+Missing frequency observations by condition (these might contain the same noun multiple times):
+
+```{r freq-nas}
+dat %>%
+  dplyr::group_by(cond_label) %>%
+  dplyr::summarize(na_count = sum(is.na(ZipfSUBTLEX)))
+```
+
+
+# Targets used more than once
+
+```{r check-duplicate-nouns}
+duplicates <- dat %>%
+  dplyr::mutate(noun = gsub("[[:punct:]]", "", noun)) %>% 
+  dplyr::group_by(noun) %>%
+  dplyr::summarize(occurrences = n(),
+            items = paste(unique(item), collapse = ", "),
+            conditions = paste(unique(cond_label), collapse = ", ")) %>%
+  dplyr::filter(occurrences > 1) %>% 
+  arrange(-occurrences)
+
+cat(nrow(duplicates), "nouns are used more than once in the stimuli.")
+
+head(duplicates, n = 20)
+```
+
+
+# Similarity metrics
+
+## Target-context similarity
+
+Check Stone et al. context similarity (LSA):
+
+```{r check-cosine-context}
+dat %>% 
+  dplyr::group_by(cond_label) %>% 
+  dplyr::summarise(MeanSimilarity = mean(cosine_targetContext, na.rm = TRUE),
+                   MinSimilarity = min(cosine_targetContext, na.rm = TRUE),
+                   MaxSimilarity = max(cosine_targetContext, na.rm = TRUE),
+                   SDSimilarity = sd(cosine_targetContext, na.rm = TRUE))
+```
+
+## Target-target similarity: embeddings
+
+
+### Fasttext
+
+Visualize/inspect the fasttext embeddings:
+
+```{r check-embeddings}
+fasttext <- dat %>% 
+  select(item, fasttext) %>% 
+  unique()
+
+# Histogram of fasttext embeddings
+ggplot(data=fasttext,
+       aes(fasttext)) + 
+  geom_histogram(bins = 20, fill = "steelblue", color = "steelblue4") + 
+  labs(title = "Histogram of fasttext target-target similarities") +
+  theme_minimal()
+```
+
+Manually inspect which target noun pairs exhibit particularly high similarity:
+
+```{r check-high-fasttext}
+mean(fasttext$fasttext)
+median(fasttext$fasttext)
+
+fasttext_high <- fasttext %>% 
+  filter(fasttext >= 0.5)
+
+length(unique(fasttext_high$item))
+
+fasttext_high %>% 
+  arrange(-fasttext)
+```
+
+Result: 25 items exhibit particularly high fasttext similarity scores of $>=0.5$, among which many pairs corresponding to intuition, such as:
+
+- Maßband - Lineal (0.69)
+- Katze - Ratte (0.69)
+- Anzug - Sakko (0.67; 2x)
+
+The lowest similarity scores in the item set are observed for:
+
+- Geschirrtuch-Mittel	(0.11)
+- Gesangsbuch-Brötchen (0.11)
+- Taschenrechner-Schieber (0.13)
+- Fächer-Fön (0.13)
+- Ladekabel-Teil (0.13)
+
+To filter them out later, a high-fasttext flag is added to those items. 
+In addition, the fasttext values are exported sorted by decreasing fasttext similarity score for manual inspection.
+
+```{r flag-high-fasttext-export}
+dat$fasttext_high <- ifelse(dat$item %in% fasttext_high$item, 1, 0)
+fasttext <- fasttext %>% 
+  arrange(-fasttext)
+write.csv(fasttext, 'stimuli_fasttext_embeddings_decreasing_keepitems.csv',
+          row.names = FALSE)
+```
+
+Result of manual inspection: Even among the items with a similarity score of $<=0.5$, many seem critical.  
+Manual inspection intuitively suggests to choose a cutoff value around $0.42$ or $0.40$, but even below this threshold value, some items might need to be manually excluded whose similarity could not be captured by fastText efficiently, such as 'Fußbilz-Erreger' ($0.397$) or 'Namensschild-Hemd' ($0.37$).
+
+```{r check-high-fasttext-0.4}
+fasttext_high <- fasttext %>% 
+  filter(fasttext >= 0.4)
+length(unique(fasttext_high$item))
+```
+
+Using a threshold of $>=0.40$ for exclusion would however result in the exclusion of 58 items...
+
+
+### Glove 
+
+TODO: check the GloVe embeddings as well and exclude stimuli which exceeded a threshold in either fastText or GloVe; perhaps this helps in detecting these items.
+
+
+# Surprisal
+
+Define functions to analyze surprisal:
+
+```{r check-surprisal-functions}
+correlation_plot <- function(dat, surprisal) {
+  model <- gsub("^surprisal_", "", surprisal)
+  p <- ggplot(dat, aes(x = cloze.target,
+                       y = eval(parse(text = surprisal)),
+                       color = cond_label)) +
+    geom_point(size = 3) + 
+    geom_text(aes(label = noun), vjust = -0.5, size = 4) +
+    geom_smooth(method = "lm", formula = y ~ x, color = "darkred", se = TRUE) +
+    labs(
+      title = "Cloze-Surprisal Correlation",
+      subtitle = model,
+      x = "Target Cloze Probability",
+      y = paste0("Target Surprisal (", model, ")"),
+      color = "Condition"
+    ) +
+    scale_color_manual(values =  c("navy", "magenta3")) +
+    theme_minimal()
+  return(p)
+}
+
+get_surprisal_summary <- function(dat, surprisal) {
+  dat %>% 
+    dplyr::group_by(cond_label) %>% 
+    dplyr::summarise(MeanSurprisal = mean(eval(parse(text = surprisal)),
+                                          na.rm = TRUE),
+                     SDSurprisal = sd(eval(parse(text = surprisal)),
+                                      na.rm = TRUE),
+                     MinSurprisal = min(eval(parse(text = surprisal)),
+                                        na.rm = TRUE),
+                     MaxSurprisal = max(eval(parse(text = surprisal)),
+                                        na.rm = TRUE))
+}
+
+surprisal_density_plot <- function(dat,
+                                   surprisal,
+                                   plot_title = "Surprisal by condition") {
+  model <- gsub("^surprisal_", "", surprisal)
+  ggplot(data=dat,
+         aes(eval(parse(text = surprisal)),
+             fill = cond_label,
+             color = cond_label)) + 
+    geom_density(alpha = 0.6) + 
+    scale_fill_manual(values = c("navy", "magenta3")) +
+    scale_color_manual(values = c("navy", "magenta3"), guide = "none") +
+    labs(title = plot_title,
+         subtitle = model,
+         x = paste0("Surprisal (", model, ")"),
+         y = "Density",
+         fill = "Condition") +
+    theme_minimal()
+}
+
+surprisal_by_cond <- function(dat, surprisal) {
+  dat_surprisal <- dat %>% 
+    dplyr::group_by(item, cond_label) %>%
+    dplyr::summarise(!!sym(surprisal) := mean(!!sym(surprisal)), .groups = "drop") %>%
+    pivot_wider(names_from = cond_label, values_from = !!sym(surprisal))
+  
+  dat_strong <- dat_surprisal %>%
+    filter(a < b)
+  dat_strong <- dat %>% 
+    filter(item %in% dat_strong$item)
+  dat_weak <- dat_surprisal %>%
+    filter(a >= b)
+  dat_weak <- dat %>% 
+    filter(item %in% dat_weak$item)
+  
+  cat("Checking surprisal by condition for model:",
+      surprisal, end = "\n")
+  cat("Number of items with surprisal in A < B:",
+      length(unique(dat_strong$item)), end = "\n")
+  cat("Number of items with surprisal in A >= B:",
+      length(unique(dat_weak$item)), end = "\n")
+  
+  # Check item subset that fulfill the surprisal-condition criterion:
+  cat("Mean surprisal by condition (only items with surprisal A <= B):",
+      end = "\n")
+  print(get_surprisal_summary(dat_strong, surprisal))
+  
+  # Density plot
+  cat("Density plot (only items with surprisal A <= B):", end = "\n")
+  surprisal_density_plot(dat_strong, surprisal,
+                         plot_title = "Surprisal by condition (good items subset)")
+} 
+```
+
+
+## Correlations
+
+### Correlation between model surprisal values
+
+Check correlations between the surprisal values produced by the different models:
+
+```{r surprisal-correlations}
+dat_cor <- dat %>%
+  rename_with(~ str_remove(., "^surprisal_")) %>% 
+  select(gerpt2, gerpt2_large, 
+         leo_7b, leo_13b) %>% 
+  cor() %>% 
+  print()
+
+corrplot(dat_cor, method = "color", type = "lower",
+         col = colorRampPalette(c("blue", "white", "red"))(200), 
+         tl.cex = 0.8, number.cex = 0.7, addCoef.col = "black", tl.srt = 45)
+```
+
+### Correlation between cloze and surprisal
+
+Check correlations between surprisal and cloze values:
+
+```{r surprisal-cloze-correlations}
+dat_cor <- dat %>%
+  select(cloze.target,
+         surprisal_gerpt2, surprisal_gerpt2_large, 
+         surprisal_leo_7b, surprisal_leo_13b) %>% 
+  cor() %>% 
+  as.data.frame() %>% 
+  select(cloze.target) %>% 
+  rownames_to_column(var = "model") %>%
+  filter(model != "cloze.target") %>%
+  mutate(model = str_remove(model, "^surprisal_")) %>% 
+  mutate(model = factor(model, 
+                        levels = c("gerpt2", "gerpt2_large", 
+                                   "leo_7b", "leo_13b"))) %>% 
+  print()
+
+ggplot(dat_cor, aes(x = model,
+                    y = cloze.target,
+                    group = 1)) +
+  geom_line(color = "steelblue") + 
+  geom_point(color = "steelblue", size = 3) +
+  geom_text(aes(label = round(cloze.target, 2)),
+                vjust = -1, size = 4) +
+  theme_minimal() +
+  labs(title = "Surprisal-Cloze Correlations",
+       x = "Model",
+       y = "Correlation") +
+  ylim(-1, 0) +                   # Set y-axis limits
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r plot-surprisal-cloze-correlations, fig.height = 20, fig.width = 20}
+p1 <- correlation_plot(dat, "surprisal_gerpt2")
+p2 <- correlation_plot(dat, "surprisal_gerpt2_large")
+p3 <- correlation_plot(dat, "surprisal_leo_7b")
+p4 <- correlation_plot(dat, "surprisal_leo_13b")
+gridExtra::grid.arrange(p1, p2, p3, p4, nrow=2)
+```
+
+
+## Surprisal by condition & model
+
+### GerPT2
+
+```{r gerpt2-surprisal}
+get_surprisal_summary(dat, "surprisal_gerpt2")
+surprisal_density_plot(dat, "surprisal_gerpt2")
+surprisal_by_cond(dat, "surprisal_gerpt2")
+```
+
+The full distributions are not very different between conditions.  
+Manual inspection reveals that often surprisal is higher in condition a vs. b.
+This is the case for 67 of the 158 items.  
+
+
+### GerPT2-large
+
+```{r gerpt2-large-surprisal}
+get_surprisal_summary(dat, "surprisal_gerpt2_large")
+surprisal_density_plot(dat, "surprisal_gerpt2_large")
+surprisal_by_cond(dat, "surprisal_gerpt2_large")
+```
+
+GerPT2-large values lead to an improved alignment of surprisal with cloze values, but there are still 37 out of 158 items for which surprisal in condition A is larger or equal to that in condition B.
+
+
+### Leo-7B
+
+```{r leo_7b-surprisal}
+get_surprisal_summary(dat, "surprisal_leo_7b")
+surprisal_density_plot(dat, "surprisal_leo_7b")
+surprisal_by_cond(dat, "surprisal_leo_7b")
+```
+
+For Leo-7B, only 17 items have higher/equal surprisal in condition A vs. B.
+
+### Leo-13B
+
+```{r leo_13b-surprisal}
+get_surprisal_summary(dat, "surprisal_leo_13b")
+surprisal_density_plot(dat, "surprisal_leo_13b")
+surprisal_by_cond(dat, "surprisal_leo_13b")
+```
+
+For Leo-13B, there are also 17 items with surprisal A >= B.
