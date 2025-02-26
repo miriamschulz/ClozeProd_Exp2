@@ -440,3 +440,57 @@ surprisal_by_cond(dat, "surprisal_leo_13b")
 ```
 
 For Leo-13B, there are also 17 items with surprisal A >= B.
+
+
+### Check all models
+
+Check the items for which the strongest model (leo13b) yielded surprisal b <= a:
+
+```{r check-bad-surprisal-items}
+dat_surprisal <- dat %>% 
+  dplyr::group_by(item, cond_label) %>%
+  dplyr::summarise("surprisal_leo_13b" := mean(surprisal_leo_13b), .groups = "drop") %>%
+  pivot_wider(names_from = cond_label, values_from = surprisal_leo_13b)
+
+dat_weak <- dat_surprisal %>%
+  filter(a >= b)
+dat_weak <- dat %>% 
+  filter(item %in% dat_weak$item) %>% 
+  select(item, cond_label, sentence_target, noun,
+         target_length, ZipfSUBTLEX,
+          cloze_probability,
+         surprisal_gerpt2, surprisal_gerpt2_large,
+         surprisal_leo_7b, surprisal_leo_13b) %>% 
+  arrange(item, cond_label)
+```
+
+Check the items for which at least 3 out of 4 models yielded surprisal b <= a:
+
+```{r check-bad-surprisal-all-models}
+dat_surprisal <- dat %>% 
+  dplyr::group_by(item, cond_label) %>%
+  dplyr::summarise("surprisal_gerpt2" := mean(surprisal_gerpt2),
+                   "surprisal_gerpt2_large" := mean(surprisal_gerpt2_large), 
+                   "surprisal_leo_7b" := mean(surprisal_leo_7b),
+                   "surprisal_leo_13b" := mean(surprisal_leo_13b), .groups = "drop") %>%
+  pivot_wider(names_from = cond_label, values_from = c(surprisal_gerpt2, surprisal_gerpt2_large,
+                                                       surprisal_leo_7b, surprisal_leo_13b))
+
+dat_weak <- dat_surprisal %>%
+  filter(rowSums(cbind(surprisal_gerpt2_a >= surprisal_gerpt2_b,
+                       surprisal_gerpt2_large_a >= surprisal_gerpt2_large_b,
+                       surprisal_leo_7b_a >= surprisal_leo_7b_b,
+                       surprisal_leo_13b_a >= surprisal_leo_13b_b)) >= 3)
+
+dat_weak <- dat %>% 
+  filter(item %in% dat_weak$item) %>% 
+  select(item, cond_label, sentence_target, noun,
+         target_length, ZipfSUBTLEX,
+         cloze_probability,
+         surprisal_gerpt2, surprisal_gerpt2_large,
+         surprisal_leo_7b, surprisal_leo_13b) %>% 
+  arrange(item, cond_label)
+```
+
+Based on manual inspection of these items, it does not seem necessary to exlude items on the basis of surprisal.  
+The surprisal values do not seem to point at particularly problematic items.
