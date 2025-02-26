@@ -1,0 +1,184 @@
+---
+title: "Check + fix the excluded items"
+author: "Miriam Schulz"
+date: "2025-02-25"
+output:
+  html_document:
+    number_sections: true
+    toc: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r libraries, message=FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+rm(list = ls())
+```
+
+
+# About
+
+This script checks the items that were removed from the Stone 2023 stimuli in an analyis of the cloze probabilities using `correct_cloze.Rmd`.
+
+It might be possible to use them with different targets.
+
+The items to check are:
+
+- 8 items were excluded from the Stone et al. 2023 stimuli because they (prorbably mistakenly) did not use the highest cloze target for condition a,.
+- 58 items were excluded from the Stone et al. 2023 stimuli because their condition b targets had zero cloze probability.
+
+
+# Read data and check manually
+
+```{r}
+dat <- read.csv("nicenboim_stone_cloze_corrected.csv", header = TRUE)
+cloze <- read.csv("nicenboim_cloze_allanswers.csv", header = TRUE)
+cloze_all <- read.csv("answers_annotated_before_noun_CORRECTED.tsv",
+                      sep = "\t", header = TRUE)
+```
+
+
+# 8 items with wrong condition a targets
+
+## Check
+
+```{r}
+critical_items <- c(13, 21, 28, 44, 76, 78, 181, 276)
+
+dat_wrongA <- dat %>% 
+  filter(item %in% critical_items)
+cloze_wrongA <- cloze %>% 
+  filter(item %in% critical_items,
+         condition == "Constraining_a") %>% 
+  arrange(item, -cloze_probability)
+cloze_all_wrongA <- cloze_all %>% 
+  filter(item %in% critical_items,
+         condition == "Constraining_a")
+```
+
+Manually inspect the sentence contexts in `dat_wrongA` and the potential targets in `cloze_wrongA` (as well as the non-truncated forms in the original cloze data, `cloze_all_wrongA`) to choose new targets.
+
+
+## Choose new targets
+
+New manually chosen targets:
+
+- 13: a: Krankenwagen (stemnoun: Wagen), b: Notdienst / Kollegen
+- 21: a: Update, b: Programm
+- 28: no solution (only Tasche vs. Tüte)
+- 44: a: Bleistift, b: Anspitzer
+- 76: a: Stelle, b: Gasse / Bank
+- 78: a: Schaufel, b: Schippe
+- 181: a: Nachricht b: Mitteilung (BUT: SYNONYMS :/)
+- 276: no solution (low Cloze targets only)
+
+
+
+# 58 items with zero cloze condition b targets
+
+## Check
+
+```{r}
+dat <- dat %>%
+  filter(keep_item == "discard" & !(item %in% critical_items))
+cloze <- cloze %>% 
+  filter(item %in% dat$item,
+         condition == "Constraining_a") %>% 
+  arrange(item, -cloze_probability)
+cloze_all <- cloze_all %>% 
+  filter(item %in% dat$item,
+         condition == "Constraining_a")
+
+# Add sentence context to cloze for faster selection:
+cloze <- merge(unique(dplyr::select(cloze_all, item, sentence)), cloze,
+               by = "item",
+               all.x = FALSE, all.y = TRUE)
+
+# Write to file for easier inspection
+write.csv(cloze, "items_to_check_manually.csv", row.names = FALSE)
+```
+
+Manually inspect the data to choose new condition b targets.
+
+
+## Choose new targets
+
+New manually chosen targets (item - a target - b target; ? means unsure, - means no solution found):
+
+- 24 Turm Wall
+- 30 Visum Gesetz
+- 46 - 
+- 49 Laken Kostüm
+- 50 Pumpe Yacht ?
+- 53 - 
+- 54 Regal Paket
+- 60 Fernglas Teleskop
+- 65 -
+- 68 -
+- 70 -
+- 82 -
+- 88 (Müll)eimer Korb
+- 106 Stethoskop Gerät
+- 109 -
+- 115 Besen Schuh ?
+- 126 Feuer Lager
+- 132 -
+- 138 Bürste Zigarette
+- 144 Suppe Tasse
+- 146 -
+- 152 -
+- 158 Karte Unterlage ?
+- 161 -
+- 163 Rede Geschichte / Danksagung [CORRECT CLOZE]
+- 164 Gitter Netz ?
+- 166 -
+- 169 -
+- 175 Taschentuch Küsschen ?
+- 177 - 
+- 188 - 
+- 189 Teleskop Fernrohr ?
+- 194 -
+- 196 - 
+- 201 -
+- 204 - 
+- 206 -
+- 212 Uhr Alternative ?
+- 213 Schürze Serviette
+- 222 -
+- 225 Witz Aufsatz
+- 229 Kalender [CORRECT CLOZE] Zettel/Stift
+- 232 -
+- 233 Zelt Tarp ?
+- 234 Untersetzer Lappen
+- 235 Toaster Paninimaker ??
+- 237 -
+- 241 -
+- 244 -
+- 246 Pause Tasse
+- 247 -
+- 254 -
+- 268 -
+- 269 -
+- 270 -
+- 271 -
+- 273 Stein Splitter ?
+- 278 -
+
+Summary:
+
+- 16 items saved
+- 10 items maybe
+- 32 items discarded
+
+Plus an additional 6 items potentially saved for the wrong a conditions, this yields:  
+out of 58 + 8 discarded items:  
+
+- 22 may be saved (but these include some synonym targets)
+- 10 maybe
+- 34 discarded
