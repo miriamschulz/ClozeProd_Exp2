@@ -130,7 +130,7 @@ dat %>%
 ```
 
 
-# Targets used more than once
+# Duplicate targets
 
 ```{r check-duplicate-nouns}
 duplicates <- dat %>%
@@ -142,10 +142,21 @@ duplicates <- dat %>%
   dplyr::filter(occurrences > 1) %>% 
   arrange(-occurrences)
 
-cat(nrow(duplicates), "nouns are used more than once in the stimuli.")
-
 head(duplicates, n = 20)
+cat(nrow(duplicates), "nouns are used more than once in the stimuli.")
+unique(sort(duplicates$noun))
+
+more_than_twice <- sum(duplicates$occurrences[duplicates$occurrences > 2])
+more_than_twice_keep_two <- sum(duplicates$occurrences[duplicates$occurrences > 2] - 2)
+cat(more_than_twice, "items contain nouns that are used more than twice.")
+cat(more_than_twice_keep_two, "of these should be removed if two occurrences of each target can be kept.")
 ```
+
+Out of the 158 items kept, 17 must be eliminated to avoid target nouns from appearing more than twice.
+
+**A note of caution:** Note that this check does NOT include checking for reuse of target nouns in the context sentences of other items.
+
+TODO In addition, the 22 items of the discarded items that could potentially be recovered must be checked for target overlap too. It may be that some of these must be discarded due to reuse of target nouns as well.
 
 
 # Similarity metrics
@@ -172,8 +183,10 @@ Visualize/inspect the fasttext embeddings:
 
 ```{r check-embeddings}
 fasttext <- dat %>% 
-  select(item, fasttext) %>% 
-  unique()
+  select(item, cond_label, noun, fasttext) %>% 
+  unique() %>% 
+  pivot_wider(names_from = cond_label, values_from = noun)
+
 
 # Histogram of fasttext embeddings
 ggplot(data=fasttext,
@@ -192,9 +205,11 @@ median(fasttext$fasttext)
 fasttext_high <- fasttext %>% 
   filter(fasttext >= 0.5)
 
-length(unique(fasttext_high$item))
+nrow(fasttext_high)
 
-fasttext_high %>% 
+# fasttext_high %>% 
+#   arrange(-fasttext)
+fasttext %>% 
   arrange(-fasttext)
 ```
 
@@ -490,6 +505,9 @@ dat_weak <- dat %>%
          surprisal_gerpt2, surprisal_gerpt2_large,
          surprisal_leo_7b, surprisal_leo_13b) %>% 
   arrange(item, cond_label)
+
+x <- dat %>% 
+  filter(item %in% c(39, 136, 184))
 ```
 
 Based on manual inspection of these items, it does not seem necessary to exlude items on the basis of surprisal.  
