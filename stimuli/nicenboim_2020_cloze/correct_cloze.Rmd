@@ -45,7 +45,8 @@ cloze <- dat %>%
   dplyr::mutate(total_responses = n()) %>%  # Count total responses per item-condition
   dplyr::group_by(item, condition, stemnoun) %>%  # Then group by response
   dplyr::summarise(count = n(), total_responses = first(total_responses), .groups = "drop") %>%
-  dplyr::mutate(cloze_probability = count / total_responses)
+  dplyr::mutate(cloze_probability = count / total_responses) %>% 
+  filter(condition == "Constraining_a")
 
 head(cloze)
 
@@ -53,7 +54,7 @@ head(cloze)
 write.csv(cloze, "nicenboim_cloze_allanswers.csv", row.names = FALSE)
 
 cloze <- cloze %>% 
-  dplyr::filter(condition == "Constraining_a") %>% 
+  # dplyr::filter(condition == "Constraining_a") %>% 
   dplyr::rename(clozenoun = stemnoun)
 
 # Ad the cloze probabilities to the stimuli

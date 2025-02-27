@@ -74,7 +74,7 @@ New manually chosen targets:
 - 28: no solution (only Tasche vs. Tüte)
 - 44: a: Bleistift, b: Anspitzer
 - 76: a: Stelle, b: Gasse / Bank
-- 78: a: Schaufel, b: Schippe
+- 78: a: Schaufel, b: Schippe (SYNONYM :( )
 - 181: a: Nachricht b: Mitteilung (BUT: SYNONYMS :/)
 - 276: no solution (low Cloze targets only)
 
