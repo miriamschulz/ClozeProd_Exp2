@@ -38,7 +38,7 @@ The items to check are:
 
 ```{r}
 dat <- read.csv("nicenboim_stone_cloze_corrected.csv", header = TRUE)
-cloze <- read.csv("nicenboim_cloze_allanswers.csv", header = TRUE)
+cloze <- read.csv("nicenboim_cloze_allanswers_stemnoun.csv", header = TRUE)
 cloze_all <- read.csv("answers_annotated_before_noun_CORRECTED.tsv",
                       sep = "\t", header = TRUE)
 ```
@@ -56,7 +56,7 @@ dat_wrongA <- dat %>%
 cloze_wrongA <- cloze %>% 
   filter(item %in% critical_items,
          condition == "Constraining_a") %>% 
-  arrange(item, -cloze_probability)
+  arrange(item, -cloze_stemnoun)
 cloze_all_wrongA <- cloze_all %>% 
   filter(item %in% critical_items,
          condition == "Constraining_a")
@@ -90,7 +90,7 @@ dat <- dat %>%
 cloze <- cloze %>% 
   filter(item %in% dat$item,
          condition == "Constraining_a") %>% 
-  arrange(item, -cloze_probability)
+  arrange(item, -cloze_stemnoun)
 cloze_all <- cloze_all %>% 
   filter(item %in% dat$item,
          condition == "Constraining_a")

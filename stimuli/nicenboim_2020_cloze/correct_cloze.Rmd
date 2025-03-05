@@ -38,27 +38,97 @@ dat <- read.csv("answers_annotated_before_noun_CORRECTED.tsv", header=TRUE, sep 
 stim <- read.csv("stimuli_stone_preprocessed_surprisal.csv", header=TRUE)
 ```
 
-```{r}
-# Manually compute cloze probabilities
+Remove trailing white spaces that would prevent the words from being merged:
+
+```{r trim-ws}
+dat$stemnoun <- trimws(dat$stemnoun, which = "both")
+dat$word <- trimws(dat$word, which = "both")
+```
+
+Compute word form and stem noun cloze probabilities:
+
+```{r compute-cloze}
+# Manually compute the stem noun cloze probabilities
 cloze <- dat %>%
   dplyr::group_by(item, condition) %>%  # Group by item and condition first
-  dplyr::mutate(total_responses = n()) %>%  # Count total responses per item-condition
+  dplyr::mutate(total_responses_stemnoun = n()) %>%  # Count total responses per item-condition
   dplyr::group_by(item, condition, stemnoun) %>%  # Then group by response
-  dplyr::summarise(count = n(), total_responses = first(total_responses), .groups = "drop") %>%
-  dplyr::mutate(cloze_probability = count / total_responses) %>% 
-  filter(condition == "Constraining_a")
-
-head(cloze)
+  dplyr::summarise(count_stemnoun = n(), total_responses_stemnoun = first(total_responses_stemnoun), .groups = "drop") %>%
+  dplyr::mutate(cloze_stemnoun = count_stemnoun / total_responses_stemnoun) %>% 
+  filter(condition == "Constraining_a") %>% 
+  arrange(item, -cloze_stemnoun)
 
 # Export for individual analysis
-write.csv(cloze, "nicenboim_cloze_allanswers.csv", row.names = FALSE)
+write.csv(cloze, "nicenboim_cloze_allanswers_stemnoun.csv", row.names = FALSE)
 
-cloze <- cloze %>% 
-  # dplyr::filter(condition == "Constraining_a") %>% 
-  dplyr::rename(clozenoun = stemnoun)
+# Manually compute the word form cloze probabilities
+cloze_wordform <- dat %>%
+  dplyr::group_by(item, condition) %>%  # Group by item and condition first
+  dplyr::mutate(total_responses_wordform = n()) %>%  # Count total responses per item-condition
+  dplyr::group_by(item, condition, word_CORRECTED, stemnoun) %>%  # Then group by response
+  dplyr::filter(condition == "Constraining_a") %>% 
+  dplyr::select(item, word_CORRECTED,	stemnoun,	total_responses_wordform) %>%   
+  dplyr::rename(word = word_CORRECTED) %>% 
+  dplyr::summarise(count_wordform = n(), total_responses_wordform = first(total_responses_wordform), .groups = "drop") %>%
+  dplyr::mutate(cloze_wordform = count_wordform / total_responses_wordform) %>%
+  arrange(item, -cloze_wordform)
 
-# Ad the cloze probabilities to the stimuli
-dat_cloze <- merge(stim, cloze,
+# Merge
+cloze_wordform <- merge(cloze, cloze_wordform,
+                         by = c("item", "condition","stemnoun"),
+                         all = TRUE)
+cloze_wordform <- cloze_wordform %>%
+  select(item, condition, stemnoun, word,
+          cloze_stemnoun, cloze_wordform,
+          count_stemnoun, total_responses_stemnoun,
+          count_wordform, total_responses_wordform) %>% 
+  arrange(item, -cloze_stemnoun, -cloze_wordform)
+
+# Export for individual analysis
+write.csv(cloze_wordform, "nicenboim_cloze_allanswers_wordform.csv",
+          row.names = FALSE)
+```
+
+```{r merge-cloze-with-stimuli}
+# Merge the word form cloze responses and their probabilities into a single cell
+# from long to wide format, separated by "/", if there is more than one:
+# cloze_wordform_wide <- cloze_wordform %>%
+#   dplyr::mutate(cloze_stemnoun = round(cloze_stemnoun, 4),
+#                 cloze_wordform = round(cloze_wordform, 4)) %>% 
+#   dplyr::group_by(item, condition, stemnoun, cloze_stemnoun,
+#                   total_responses_stemnoun) %>% 
+#   dplyr::rename(clozenoun = stemnoun,
+#                 n_cloze_responses = total_responses_stemnoun) %>% 
+#   dplyr::summarise(
+#     word = paste(word, collapse = "/"), 
+#     cloze_wordform = paste(cloze_wordform, collapse = "/"),
+#     .groups = "drop"
+#   )
+
+cloze_wordform_wide <- cloze_wordform %>%
+  dplyr::mutate(
+    cloze_stemnoun = round(cloze_stemnoun, 4),
+    cloze_wordform = round(cloze_wordform, 4)
+  ) %>%
+  dplyr::group_by(item, condition, stemnoun, cloze_stemnoun,
+                  total_responses_stemnoun) %>%
+  dplyr::rename(
+    clozenoun = stemnoun,
+    n_cloze_responses = total_responses_stemnoun
+  ) %>%
+  dplyr::summarise(
+    wordform_highest = first(word),
+    cloze_wordform_highest = first(cloze_wordform),
+    wordform_other = paste(word[-1], collapse = "/"),
+    cloze_wordform_other = paste(cloze_wordform[-1], collapse = "/"),
+    .groups = "drop"
+  )
+
+# cloze <- cloze %>%
+#   dplyr::rename(clozenoun = stemnoun)
+
+# Add the cloze probabilities to the stimuli
+dat_cloze <- merge(stim, cloze_wordform_wide,
                    by = c("item"),
                    all.x = TRUE,
                    all.y = FALSE)
@@ -91,28 +161,55 @@ stim_missing <- dplyr::anti_join(stim, dat_cloze_reduced,
 setdiff(colnames(dat_cloze), colnames(stim_missing))
 stim_missing$condition <- "Constraining_a"
 stim_missing$clozenoun <- "NA"
-stim_missing$count <- 0
-stim_missing$total_responses <- "NA"
-stim_missing$cloze_probability <- 0.0
+stim_missing$cloze_stemnoun <- 0
+stim_missing$n_cloze_responses <- "NA"
+stim_missing$wordform_highest <- "NA"
+stim_missing$cloze_wordform_highest <- 0.0
+stim_missing$wordform_other <- "NA"
+stim_missing$cloze_wordform_other <- 0.0
+# stim_missing$word <- "NA"
+# stim_missing$cloze_wordform <- 0.0
+# summary(colnames(dat_cloze) == colnames(stim_missing))
 
 # Merge
 dat_cloze_full <- rbind(dat_cloze, stim_missing)
 dat_cloze_full <- unique(dat_cloze_full)
+```
+
+```{r check-duplicates}
+# Check that all items are there
 length(unique(dat_cloze_full$item))  # all items are there now
 xtabs(~ cond_label, dat_cloze_full)  # this is concerning...
-xtabs(~ item + cond_label, dat_cloze_full)  # 2x 71b, 2x 132a and 133a
+#xtabs(~ item + cond_label, dat_cloze_full)  # previously 2x 71b, 2x 132a and 133a
+
+# Check if/which items are there twice:
+tab <- as.data.frame(xtabs(~ item + cond_label, dat_cloze_full))
+row_sums <- tab %>%
+  dplyr::group_by(item) %>%
+  dplyr::summarise(total = sum(Freq)) %>%
+  arrange(desc(total)) # Sort by decreasing frequency
+# Reorder item factor levels based on sorted counts
+tab$item <- factor(tab$item, levels = row_sums$item)
+tab <- xtabs(Freq ~ item + cond_label, data = tab)
+tab  # items 5a and 113a are there twice
+
 dat_duplicates <- dat_cloze_full %>% 
-  filter(item %in% c(71, 132, 133)) %>% 
+  # filter(item %in% c(71, 132, 133)) %>%   # previous duplicate items
+  filter(item %in% c(5, 113)) %>%  # new duplicate items
   arrange(item, cond_label)
 # write.csv(dat_duplicates, "delete.csv")
 
 # There is an issue with 3 items, the clozenoun contains different labels.
 # Manually delete the duplicates for these items:
+# dat_cloze_full <- dat_cloze_full %>% 
+#   filter(!(item == 71 & clozenoun == "Verkäuferin")) %>% 
+#   filter(!(item == 132 & clozenoun == "Fotografen")) %>% 
+#   filter(!(item == 133 & clozenoun == "Briefmarke"))
 dat_cloze_full <- dat_cloze_full %>% 
-  filter(!(item == 71 & clozenoun == "Verkäuferin")) %>% 
-  filter(!(item == 132 & clozenoun == "Fotografen")) %>% 
-  filter(!(item == 133 & clozenoun == "Briefmarke"))
+  filter(!(item == 5 & clozenoun == "Eisen")) %>% 
+  filter(!(item == 113 & clozenoun == "Buch"))
 
+# Check that this fixed any imbalances:
 range(xtabs(~ item + cond_label, dat_cloze_full))
 xtabs(~ cond_label, dat_cloze_full)
 ```
@@ -122,26 +219,29 @@ xtabs(~ cond_label, dat_cloze_full)
 
 Check items with problematic Cloze values and inspect them manually (looking at the raw Cloze responses in `answers_annotated_before_noun.tsv`; corrections are saved in `answers_annotated_before_noun_CORRECTED.tsv`).
 
-```{r}
+```{r check-items}
 dat_impossible <- dat_cloze_full %>% 
-  filter(cond_label == "a" & cloze_probability < 0.2)
+  filter(cond_label == "a" & cloze_stemnoun < 0.2)
 
-dat_cloze_full$cloze_probability <- round(dat_cloze_full$cloze_probability, 2)
-summary(dat_cloze_full$cloze.target == dat_cloze_full$cloze_probability)
+# Manually inspect items for which my calculated stem noun cloze probability
+# does not match the cloze probability calculated by Stone et al.: 
+dat_cloze_full$cloze_stemnoun <- round(dat_cloze_full$cloze_stemnoun, 2)
+summary(dat_cloze_full$cloze.target == dat_cloze_full$cloze_stemnoun)
 dat_inspect <- dat_cloze_full %>% 
-  filter(cloze.target != cloze_probability) %>% 
+  filter(cloze.target != cloze_stemnoun) %>% 
   select(item, cond_label,
          noun, stemnoun, clozenoun,
-         cloze.target, cloze.target_smth, cloze_probability,
-         count, total_responses) %>% 
+         cloze.target, cloze.target_smth, cloze_stemnoun,
+         n_cloze_responses) %>% 
   arrange(item, cond_label)
+unique(dat_inspect$item)
 ```
 
-Some items seem to have made-up cloze probabilities, OR their cloze probabilities were derived from other targets than the ones used in a. 
+Manual inspection reveals that some items seem to have altogether made-up cloze probabilities, OR their cloze probabilities were derived from other targets than the ones used in a. 
 
 Delete these items:
 
-```{r}
+```{r define-items-to-delete}
 items_to_delete <- c(13, 76, 44, 28, 78, 21, 181, 276)
 
 # dat_cloze_full <- dat_cloze_full %>% 
@@ -153,7 +253,7 @@ items_to_delete <- c(13, 76, 44, 28, 78, 21, 181, 276)
 
 Check cloze calculated by Stone vs. cloze as I calculated:
 
-```{r}
+```{r check-cloze-probs}
 # Stone cloze probs
 dat_cloze_full %>%
   dplyr::group_by(cond_label) %>%
@@ -165,10 +265,10 @@ dat_cloze_full %>%
 # My cloze probs
 dat_cloze_full %>%
   dplyr::group_by(cond_label) %>%
-  dplyr::summarise(MeanCloze = mean(cloze_probability),
-                   ClozeSD = sd(cloze_probability, na.rm = TRUE),
-                   MinCloze = min(cloze_probability),
-                   MaxCloze = max(cloze_probability))
+  dplyr::summarise(MeanCloze = mean(cloze_stemnoun),
+                   ClozeSD = sd(cloze_stemnoun, na.rm = TRUE),
+                   MinCloze = min(cloze_stemnoun),
+                   MaxCloze = max(cloze_stemnoun))
 ```
 
 
@@ -176,20 +276,21 @@ dat_cloze_full %>%
 
 Check how many items have zero cloze:
 
-```{r}
+```{r check-zero-cloze}
 dat_zero_cloze <- dat_cloze_full %>% 
-  filter(cloze_probability == 0)
-summary(as.factor(dat_zero_cloze$cond_label))
+  filter(cloze_stemnoun == 0)
 nrow(dat_zero_cloze)
+summary(as.factor(dat_zero_cloze$cond_label))
 
 length(unique(dat_zero_cloze$item)) / length(unique(dat_cloze_full$item)) * 100
 ```
 
-~27% of all items have a zero cloze target.
+~30% of all items have a zero cloze target.  
+(Prior to correcting more cloze values, this was ~27% of all items.)
 
-```{r}
+```{r plot-cloze}
 ggplot(data=dat_cloze_full,
-       aes(cloze_probability, fill = cond_label, color = cond_label)) + 
+       aes(cloze_stemnoun, fill = cond_label, color = cond_label)) + 
   geom_density(alpha = 0.6) + 
   scale_fill_manual(values = c("navy", "magenta3")) +
   scale_color_manual(values = c("navy", "magenta3"), guide = "none") +
@@ -199,7 +300,7 @@ ggplot(data=dat_cloze_full,
 
 Remove the zero cloze target items:
 
-```{r}
+```{r remove-zero-cloze}
 dat_keep <- dat_cloze_full %>%
   filter(!(item %in% dat_zero_cloze$item) &
            !(dat_cloze_full$item %in% items_to_delete))
@@ -207,13 +308,13 @@ length(unique(dat_keep$item))
 
 dat_keep %>%
   dplyr::group_by(cond_label) %>%
-  dplyr::summarise(MeanCloze = mean(cloze_probability),
-                   ClozeSD = sd(cloze_probability, na.rm = TRUE),
-                   MinCloze = min(cloze_probability),
-                   MaxCloze = max(cloze_probability))
+  dplyr::summarise(MeanCloze = mean(cloze_stemnoun),
+                   ClozeSD = sd(cloze_stemnoun, na.rm = TRUE),
+                   MinCloze = min(cloze_stemnoun),
+                   MaxCloze = max(cloze_stemnoun))
 
 ggplot(data=dat_keep,
-       aes(cloze_probability, fill = cond_label, color = cond_label)) + 
+       aes(cloze_stemnoun, fill = cond_label, color = cond_label)) + 
   geom_density(alpha = 0.6) + 
   scale_fill_manual(values = c("navy", "magenta3")) +
   scale_color_manual(values = c("navy", "magenta3"), guide = "none") +
@@ -225,11 +326,10 @@ ggplot(data=dat_keep,
 
 Annotate which items to keep/discard due to cloze, and export.
 
-```{r}
+```{r export-corrected}
 dat_cloze_full$keep_item <- ifelse(dat_cloze_full$item %in% dat_keep$item,
                                    "keep", "discard")
 dat_cloze_full <- dat_cloze_full %>% 
   arrange(item, cond_label)
 write.csv(dat_cloze_full, "nicenboim_stone_cloze_corrected.csv", row.names = FALSE)
 ```
-
