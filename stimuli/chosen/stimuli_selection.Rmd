@@ -53,44 +53,59 @@ dat <- dat %>%
   filter(keep_item == "keep")
 ```
 
+
+## Stem noun cloze
+
 Check the distribution of Cloze probabilities:
 
-```{r cloze-by-cond}
-# Range of cloze values in each condition
-# Stone et al. "unsmoothed"
+Stone et al. "unsmoothed":
+
+```{r cloze-by-cond-unsmoothed}
 dat %>% 
   dplyr::group_by(cond_label) %>% 
   dplyr::summarise(MeanCloze = mean(cloze.target),
                    ClozeSD = sd(cloze.target),
                    MinCloze = min(cloze.target),
                    MaxCloze = max(cloze.target))
+```
 
-# Stone et al. smoothed
+Stone et al. smoothed:
+
+```{r cloze-by-cond-smoothed}
 dat %>% 
   dplyr::group_by(cond_label) %>% 
   dplyr::summarise(MeanCloze = mean(cloze.target_smth),
                    ClozeSD = sd(cloze.target_smth),
                    MinCloze = min(cloze.target_smth),
                    MaxCloze = max(cloze.target_smth))
+```
 
-# Manually recalculated
+Manually recalculated:
+
+```{r cloze-by-cond-recalculated}
 dat %>%
   dplyr::group_by(cond_label) %>%
-  dplyr::summarise(MeanCloze = mean(cloze_probability),
-                   ClozeSD = sd(cloze_probability),
-                   MinCloze = min(cloze_probability),
-                   MaxCloze = max(cloze_probability))
+  dplyr::summarise(MeanCloze = mean(cloze_stemnoun),
+                   ClozeSD = sd(cloze_stemnoun),
+                   MinCloze = min(cloze_stemnoun),
+                   MaxCloze = max(cloze_stemnoun))
+```
 
+Visualizations of the manually recalculated stem noun cloze probabilities by condition:
+
+```{r stem-cloze-by-cond-viz}
 # Histogram of cloze probs
 ggplot(data=dat,
-       aes(cloze_probability)) + 
-  geom_histogram(bins = 10, fill = "steelblue", color = "steelblue4") + 
-  labs(title = "Histogram of cloze probabilities") +
+       aes(cloze_stemnoun, fill = cond_label)) + 
+  # geom_histogram(bins = 20, fill = "steelblue", color = "steelblue4") + 
+  geom_histogram(bins = 20) + 
+  scale_fill_manual(values = c("navy", "magenta3")) +
+  labs(title = "Histogram of Cloze probabilities by condition") +
   theme_minimal()
 
 # Density plot
 ggplot(data=dat,
-       aes(cloze_probability, fill = cond_label, color = cond_label)) + 
+       aes(cloze_stemnoun, fill = cond_label, color = cond_label)) + 
   geom_density(alpha = 0.6) + 
   scale_fill_manual(values = c("navy", "magenta3")) +
   scale_color_manual(values = c("navy", "magenta3"), guide = "none") +
@@ -98,6 +113,68 @@ ggplot(data=dat,
        fill = "Condition") +
   theme_minimal()
 ```
+
+
+## Word form cloze
+
+```{r cloze-word-form}
+# x <- dat %>% 
+#   select(item, cond_label, noun, stemnoun, cloze.target, cloze.target_smth,
+#          clozenoun, cloze_stemnoun, wordform_highest, cloze_wordform_highest)
+
+# How often is the cloze probability of the most frequent word form also
+# identical to that of the cloze word stem?
+summary(round(dat$cloze_wordform_highest, 2) == dat$cloze_stemnoun)
+summary(dat$cloze.target == dat$cloze_stemnoun) # stem used by Stone et al. vs. stem used by me
+
+# How often are the actual words identical?
+summary(dat$wordform_highest == dat$stemnoun)  # stemnoun: stem used by Stone et al.
+summary(dat$wordform_highest == dat$clozenoun) # clozenoun: stem used by me
+
+dat %>%
+  dplyr::group_by(cond_label) %>%
+  dplyr::summarise(MeanCloze = mean(cloze_wordform_highest),
+                   ClozeSD = sd(cloze_wordform_highest),
+                   MinCloze = min(cloze_wordform_highest),
+                   MaxCloze = max(cloze_wordform_highest))
+```
+
+```{r stem-cloze-by-cond-wordform-viz}
+# Histogram of cloze probs
+ggplot(data=dat,
+       aes(cloze_wordform_highest, fill = cond_label)) + 
+  # geom_histogram(bins = 20, fill = "steelblue", color = "steelblue4") + 
+  geom_histogram(bins = 20) + 
+  scale_fill_manual(values = c("navy", "magenta3")) +
+  labs(title = "Histogram of Cloze probabilities by condition (word forms)") +
+  theme_minimal()
+
+# Density plot
+ggplot(data=dat,
+       aes(cloze_wordform_highest, fill = cond_label, color = cond_label)) + 
+  geom_density(alpha = 0.6) + 
+  scale_fill_manual(values = c("navy", "magenta3")) +
+  scale_color_manual(values = c("navy", "magenta3"), guide = "none") +
+  labs(title = "Cloze probabilities by condition (word forms)",
+       fill = "Condition") +
+  theme_minimal()
+```
+
+
+
+Some of the condition a targets have low cloze probability in condition a when considering only the cloze probability of their word form, not that of the actual stem.  
+Take a closer look at these items:
+
+```{r inspect-low-wordform-cloze-a}
+dat_low_a_wordform_cloze <- dat %>% 
+  filter(cloze_wordform_highest < 0.5 & 
+           cond_label == "a") %>% 
+  arrange(cloze_wordform_highest)
+```
+
+This concerns 17 items.  
+It remains unproblematic as long as the highest cloze word form is the stem, like "Bügel" in item 190a, which alone accounts for a cloze probability of 0.3158 of responses, while the longer forms "Kleiderbügel" and "Samtkleiderbügel" have additional cloze probabilities of 0.2632 and 0.0526, respectively;  
+However, it's more tricky when the highest cloze word form is the longer variant, like "Drogenspürhund" in item 62a, where it might be problematic to simply use the stem "Hund" instead, or "Alarmanlage" in item 108a, where the other attested word forms are "Sicherheitsanlage" and "Sicherungsanlage", while the stem noun "Anlage" was never used by itself.
 
 
 
@@ -152,7 +229,7 @@ cat(more_than_twice, "items contain nouns that are used more than twice.")
 cat(more_than_twice_keep_two, "of these should be removed if two occurrences of each target can be kept.")
 ```
 
-Out of the 158 items kept, 17 must be eliminated to avoid target nouns from appearing more than twice.
+Out of the 158 items kept, 16 must be eliminated to avoid target nouns from appearing more than twice.
 
 **A note of caution:** Note that this check does NOT include checking for reuse of target nouns in the context sentences of other items.
 
@@ -174,8 +251,8 @@ dat %>%
                    SDSimilarity = sd(cosine_targetContext, na.rm = TRUE))
 ```
 
-## Target-target similarity: embeddings
 
+## Target-target similarity: embeddings
 
 ### Fasttext
 
@@ -201,6 +278,7 @@ Manually inspect which target noun pairs exhibit particularly high similarity:
 ```{r check-high-fasttext}
 mean(fasttext$fasttext)
 median(fasttext$fasttext)
+range(fasttext$fasttext)
 
 fasttext_high <- fasttext %>% 
   filter(fasttext >= 0.5)
@@ -213,7 +291,7 @@ fasttext %>%
   arrange(-fasttext)
 ```
 
-Result: 25 items exhibit particularly high fasttext similarity scores of $>=0.5$, among which many pairs corresponding to intuition, such as:
+Result: 24 items exhibit particularly high fasttext similarity scores of $>=0.5$, among which many pairs corresponding to intuition, such as:
 
 - Maßband - Lineal (0.69)
 - Katze - Ratte (0.69)
@@ -247,12 +325,55 @@ fasttext_high <- fasttext %>%
 length(unique(fasttext_high$item))
 ```
 
-Using a threshold of $>=0.40$ for exclusion would however result in the exclusion of 58 items...
+Using a threshold of $>=0.40$ for exclusion would however result in the exclusion of 56 items...
 
 
 ### Glove 
 
-TODO: check the GloVe embeddings as well and exclude stimuli which exceeded a threshold in either fastText or GloVe; perhaps this helps in detecting these items.
+Visualize/inspect the GloVe embeddings:
+
+```{r read-glove}
+glove <- read.csv("stimuli_glove_embeddings.csv", header = TRUE)
+
+mean(glove$glove, na.rm = TRUE)
+median(glove$glove, na.rm = TRUE)
+range(glove$glove, na.rm = TRUE)
+
+summary(is.na(glove$glove))
+```
+
+
+```{r check-embeddings-glove}
+# Histogram of glove embeddings
+ggplot(data=glove,
+       aes(glove)) + 
+  geom_histogram(bins = 20, fill = "steelblue", color = "steelblue4") + 
+  labs(title = "Histogram of glove target-target similarities") +
+  theme_minimal()
+```
+
+Manually inspect which target noun pairs exhibit particularly high similarity:
+
+```{r check-high-glove}
+glove %>% 
+  arrange(-glove)
+
+glove_high <- glove %>% 
+  filter(glove >= 0.4)
+length(unique(glove_high$item))
+```
+
+
+### Comparing GloVe & Fasttext
+
+```{r cor-embeddings}
+dat_embeddings <- merge(fasttext, glove) %>% 
+  filter(!(is.na(glove)))
+cor(dat_embeddings$glove, dat_embeddings$fasttext)
+```
+
+Low correlation between the GloVe and fasttext embeddings. The German GloVe embeddings used appear unreliable.
+
 
 
 # Surprisal
@@ -260,9 +381,9 @@ TODO: check the GloVe embeddings as well and exclude stimuli which exceeded a th
 Define functions to analyze surprisal:
 
 ```{r check-surprisal-functions}
-correlation_plot <- function(dat, surprisal) {
+correlation_plot <- function(dat, cloze, surprisal) {
   model <- gsub("^surprisal_", "", surprisal)
-  p <- ggplot(dat, aes(x = cloze.target,
+  p <- ggplot(dat, aes(x = eval(parse(text = cloze)),
                        y = eval(parse(text = surprisal)),
                        color = cond_label)) +
     geom_point(size = 3) + 
@@ -368,9 +489,11 @@ corrplot(dat_cor, method = "color", type = "lower",
 
 ### Correlation between cloze and surprisal
 
+#### Stem nouns (Stone et al. stems)
+
 Check correlations between surprisal and cloze values:
 
-```{r surprisal-cloze-correlations}
+```{r surprisal-cloze-correlations-stemnoun}
 dat_cor <- dat %>%
   select(cloze.target,
          surprisal_gerpt2, surprisal_gerpt2_large, 
@@ -401,13 +524,102 @@ ggplot(dat_cor, aes(x = model,
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-```{r plot-surprisal-cloze-correlations, fig.height = 20, fig.width = 20}
-p1 <- correlation_plot(dat, "surprisal_gerpt2")
-p2 <- correlation_plot(dat, "surprisal_gerpt2_large")
-p3 <- correlation_plot(dat, "surprisal_leo_7b")
-p4 <- correlation_plot(dat, "surprisal_leo_13b")
+```{r plot-surprisal-cloze-correlations-stemnouns, fig.height = 20, fig.width = 20}
+p1 <- correlation_plot(dat, "cloze.target", "surprisal_gerpt2")
+p2 <- correlation_plot(dat, "cloze.target", "surprisal_gerpt2_large")
+p3 <- correlation_plot(dat, "cloze.target", "surprisal_leo_7b")
+p4 <- correlation_plot(dat, "cloze.target", "surprisal_leo_13b")
 gridExtra::grid.arrange(p1, p2, p3, p4, nrow=2)
 ```
+
+
+#### Stem nouns (my stems + corrected cloze values)
+
+Check correlations between surprisal and cloze values:
+
+```{r surprisal-cloze-correlations-mystems}
+dat_cor <- dat %>%
+  select(cloze_stemnoun,
+         surprisal_gerpt2, surprisal_gerpt2_large, 
+         surprisal_leo_7b, surprisal_leo_13b) %>% 
+  cor() %>% 
+  as.data.frame() %>% 
+  select(cloze_stemnoun) %>% 
+  rownames_to_column(var = "model") %>%
+  filter(model != "cloze_stemnoun") %>%
+  mutate(model = str_remove(model, "^surprisal_")) %>% 
+  mutate(model = factor(model, 
+                        levels = c("gerpt2", "gerpt2_large", 
+                                   "leo_7b", "leo_13b"))) %>% 
+  print()
+
+ggplot(dat_cor, aes(x = model,
+                    y = cloze_stemnoun,
+                    group = 1)) +
+  geom_line(color = "steelblue") + 
+  geom_point(color = "steelblue", size = 3) +
+  geom_text(aes(label = round(cloze_stemnoun, 2)),
+                vjust = -1, size = 4) +
+  theme_minimal() +
+  labs(title = "Surprisal-Cloze Correlations",
+       x = "Model",
+       y = "Correlation") +
+  ylim(-1, 0) +                   # Set y-axis limits
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r plot-surprisal-cloze-correlations-mystems, fig.height = 20, fig.width = 20}
+p1 <- correlation_plot(dat, "cloze_stemnoun", "surprisal_gerpt2")
+p2 <- correlation_plot(dat, "cloze_stemnoun", "surprisal_gerpt2_large")
+p3 <- correlation_plot(dat, "cloze_stemnoun", "surprisal_leo_7b")
+p4 <- correlation_plot(dat, "cloze_stemnoun", "surprisal_leo_13b")
+gridExtra::grid.arrange(p1, p2, p3, p4, nrow=2)
+```
+
+
+#### Word forms
+
+```{r surprisal-cloze-correlations-wordforms}
+dat_cor <- dat %>%
+  select(cloze_wordform_highest,
+         surprisal_gerpt2, surprisal_gerpt2_large, 
+         surprisal_leo_7b, surprisal_leo_13b) %>% 
+  cor() %>% 
+  as.data.frame() %>% 
+  select(cloze_wordform_highest) %>% 
+  rownames_to_column(var = "model") %>%
+  filter(model != "cloze_wordform_highest") %>%
+  mutate(model = str_remove(model, "^surprisal_")) %>% 
+  mutate(model = factor(model, 
+                        levels = c("gerpt2", "gerpt2_large", 
+                                   "leo_7b", "leo_13b"))) %>% 
+  print()
+
+ggplot(dat_cor, aes(x = model,
+                    y = cloze_wordform_highest,
+                    group = 1)) +
+  geom_line(color = "steelblue") + 
+  geom_point(color = "steelblue", size = 3) +
+  geom_text(aes(label = round(cloze_wordform_highest, 2)),
+                vjust = -1, size = 4) +
+  theme_minimal() +
+  labs(title = "Surprisal-Cloze Correlations",
+       x = "Model",
+       y = "Correlation") +
+  ylim(-1, 0) +                   # Set y-axis limits
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r plot-surprisal-cloze-correlations-wordforms, fig.height = 20, fig.width = 20}
+p1 <- correlation_plot(dat, "cloze_wordform_highest", "surprisal_gerpt2")
+p2 <- correlation_plot(dat, "cloze_wordform_highest", "surprisal_gerpt2_large")
+p3 <- correlation_plot(dat, "cloze_wordform_highest", "surprisal_leo_7b")
+p4 <- correlation_plot(dat, "cloze_wordform_highest", "surprisal_leo_13b")
+gridExtra::grid.arrange(p1, p2, p3, p4, nrow=2)
+```
+
+
+
 
 
 ## Surprisal by condition & model
@@ -473,7 +685,7 @@ dat_weak_leo <- dat %>%
   filter(item %in% dat_weak_leo$item) %>% 
   select(item, cond_label, sentence_target, noun,
          target_length, ZipfSUBTLEX,
-          cloze_probability,
+          cloze_stemnoun,
          surprisal_gerpt2, surprisal_gerpt2_large,
          surprisal_leo_7b, surprisal_leo_13b) %>% 
   arrange(item, cond_label)
@@ -501,13 +713,10 @@ dat_weak <- dat %>%
   filter(item %in% dat_weak$item) %>% 
   select(item, cond_label, sentence_target, noun,
          target_length, ZipfSUBTLEX,
-         cloze_probability,
+         cloze_stemnoun,
          surprisal_gerpt2, surprisal_gerpt2_large,
          surprisal_leo_7b, surprisal_leo_13b) %>% 
   arrange(item, cond_label)
-
-x <- dat %>% 
-  filter(item %in% c(39, 136, 184))
 ```
 
 Based on manual inspection of these items, it does not seem necessary to exlude items on the basis of surprisal.  
