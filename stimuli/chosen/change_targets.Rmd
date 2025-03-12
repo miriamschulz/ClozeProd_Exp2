@@ -1,0 +1,160 @@
+---
+title: "Change targets"
+author: "Miriam Schulz"
+date: "2025-03-04"
+output:
+  html_document:
+    number_sections: true
+    toc: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r libraries, message=FALSE}
+library("tidyverse")
+library("ggplot2")
+library("Rmisc")
+library(stringr)
+library(rlang)
+library(corrplot)
+
+rm(list = ls())
+```
+
+
+# About
+
+This script changes targets in the Stone et al. 2023 experimental stimuli and adds the measures like LLM surprisal + target similarity metrics for the new targets.
+
+- Out of the 58 items that were removed because the condition b target used by Stone et al. 2023 was not attested in the Nicenboim et al. 2020 cloze responses, some items can be kept with different attested condition b target manually chosen from the Nicenboim et al. cloze data.
+- Out of the 8 items that were removed because the condition a target chosen by Stone et al. 2023 was not the modal cloze response (probably copy-paste errors), some items can be kept by changing the condition a target to the modal response (however, some did not have a modal response). 
+- Out of the 158 Stone et al. items in which the b targets where attested in the Nicenboim et al. 2020 cloze responses, some items nevertheless contain implausible b condition targets, others are synonyms/hyponyms. Some of these items are flagged to be removed, for others new target nouns are chosen for condition b.
+
+
+# Read in data
+
+```{r read-stimuli, eval = FALSE}
+dat <- read.csv("nicenboim_stone_cloze_corrected.csv", header=TRUE)
+
+dat <- dat %>% 
+  select(keep_item, item, cond_label,
+         sentence_target, #sentence, pre_critical, determiner, adj, 
+         noun, post_noun, continuation,
+         stemnoun, cloze.target,
+         clozenoun, cloze_stemnoun,
+         wordform_highest, cloze_wordform_highest,
+         wordform_other, cloze_wordform_other,
+         fasttext, surprisal_leo_13b)
+
+# write.csv(dat, "nicenboim_stone_cloze_MANUALSELECTION.csv", row.names = FALSE)
+
+# How many items are there in total?
+length(unique(dat$item))
+```
+
+```{r read-selected-stimuli}
+dat <- read.csv("nicenboim_stone_cloze_MANUALLY_REPLACED_TARGETS.csv", header=TRUE)
+```
+
+
+# Inspect
+
+Load the manually annotated items and inspect manually:
+
+```{r separate-items-and-inspect}
+keep <- dat %>% 
+  filter(keep_item == "keep") %>% 
+  arrange(keep_item, item, cond_label)
+summary(keep$noun == keep$wordform_highest)
+cat(length(unique(keep$item)), "items could be kept as they are.")
+
+fixed <- dat %>% 
+  filter(keep_item == "fixed") %>% 
+  arrange(keep_item, item, cond_label)
+summary(fixed$noun == fixed$wordform_highest)
+cat(length(unique(fixed$item)), "items could additionally be fixed.")
+cat(nrow(filter(fixed, !is.na(noun_new))), "nouns were replaced to fix the stimuli (in condition a and/or b).")
+
+discard <- dat %>% 
+  filter(keep_item == "discard") 
+cat(length(unique(discard$item)), "items could not be fixed.")
+
+synonyms <- dat %>% 
+  filter(keep_item == "synonym")
+length(unique(synonyms$item))
+
+inspect <- dat %>% 
+  filter(!(item %in% keep$item) & !(item %in% discard$item)) %>% 
+  arrange(keep_item, item, cond_label)
+cat(length(unique(inspect$item)), "items have other issues and need to be manually inspected.")
+unique(inspect$keep_item)
+
+write.csv(inspect, "critical_items_to_inspect_manually.csv", row.names = FALSE)
+```
+
+Inspect the `inspect` items manually.
+
+
+# Check for duplicates
+
+Check the fixed items (with changed targets) for use of duplicate targets:
+
+```{r merge-keep-df}
+# Replace the targets
+keep_changed <- rbind(keep, fixed)
+keep_changed <- keep_changed %>% 
+  mutate(noun = if_else(noun_new != "", noun_new, noun))
+keep_changed <- keep_changed %>% 
+  mutate(clozenoun = if_else(clozenoun_new != "", clozenoun_new, clozenoun))
+
+length(unique(keep_changed$item))
+```
+
+Stem nouns:
+
+```{r check-duplicate-nouns-stems}
+duplicates_stems <- keep_changed %>%
+  dplyr::group_by(clozenoun) %>%
+  dplyr::summarize(occurrences = n(),
+            items = paste(unique(item), collapse = ", "),
+            conditions = paste(unique(cond_label), collapse = ", ")) %>%
+  dplyr::filter(occurrences > 1) %>% 
+  arrange(-occurrences)
+
+head(duplicates_stems, n = 20)
+cat(nrow(duplicates_stems), "stem nouns are used more than once in the stimuli.")
+unique(sort(duplicates_stems$clozenoun))
+
+more_than_twice <- sum(duplicates_stems$occurrences[duplicates_stems$occurrences > 2])
+cat(more_than_twice, "items contain stem nouns that are used more than twice.")
+
+more_than_twice_keep_two <- sum(duplicates_stems$occurrences[duplicates_stems$occurrences > 2] - 2)
+cat(more_than_twice_keep_two, "of these should be removed if two occurrences of each target can be kept.")
+```
+
+Word forms:
+
+```{r check-duplicate-nouns-wordforms}
+duplicates_wordforms <- keep_changed %>%
+  dplyr::mutate(noun = gsub("[[:punct:]]", "", noun)) %>% 
+  dplyr::group_by(noun) %>%
+  dplyr::summarize(occurrences = n(),
+            items = paste(unique(item), collapse = ", "),
+            conditions = paste(unique(cond_label), collapse = ", ")) %>%
+  dplyr::filter(occurrences > 1) %>% 
+  arrange(-occurrences)
+
+head(duplicates_wordforms, n = 20)
+cat(nrow(duplicates_wordforms), "word forms are used more than once in the stimuli.")
+unique(sort(duplicates_wordforms$noun))
+
+more_than_twice <- sum(duplicates_wordforms$occurrences[duplicates_wordforms$occurrences > 2])
+cat(more_than_twice, "items contain word forms that are used more than twice.")
+
+more_than_twice_keep_two <- sum(duplicates_wordforms$occurrences[duplicates_wordforms$occurrences > 2] - 2)
+cat(more_than_twice_keep_two, "of these should be removed if two occurrences of each target can be kept.")
+```
