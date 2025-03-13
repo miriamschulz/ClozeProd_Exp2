@@ -1,5 +1,5 @@
 ---
-title: "Check the experimental stimuli"
+title: "Check cloze-corrected stimuli"
 author: "Miriam Schulz"
 date: "2025-02-19"
 output:
@@ -28,7 +28,7 @@ rm(list = ls())
 
 # About
 
-This script checks the Stone et al. 2023 experimental stimuli and adds + analyzes metrics like similarity scores between the target words and target noun surprisal by 4 different LLMs.
+This script checks the Stone et al. 2023 experimental stimuli (filtered for 158 targets with non-zero cloze probability for the b-condition targets) and adds + analyzes metrics like similarity scores between the target words and target noun surprisal by 4 different LLMs.
 
 
 # Inspect cloze probability per condition
@@ -224,8 +224,9 @@ cat(nrow(duplicates), "nouns are used more than once in the stimuli.")
 unique(sort(duplicates$noun))
 
 more_than_twice <- sum(duplicates$occurrences[duplicates$occurrences > 2])
-more_than_twice_keep_two <- sum(duplicates$occurrences[duplicates$occurrences > 2] - 2)
 cat(more_than_twice, "items contain nouns that are used more than twice.")
+
+more_than_twice_keep_two <- sum(duplicates$occurrences[duplicates$occurrences > 2] - 2)
 cat(more_than_twice_keep_two, "of these should be removed if two occurrences of each target can be kept.")
 ```
 
@@ -619,10 +620,99 @@ gridExtra::grid.arrange(p1, p2, p3, p4, nrow=2)
 ```
 
 
-
-
-
 ## Surprisal by condition & model
+
+### Mean surprisal by condition: all models
+
+```{r mean-surprisal-by-condition-and-model}
+# Convert to long format
+dat_surprisals_long <- dat %>%
+  # filter(!is.na(Region), ExpCondition %in% c("a", "b")) %>%
+  pivot_longer(cols = c(surprisal_gerpt2, surprisal_gerpt2_large,
+                        surprisal_leo_7b, surprisal_leo_13b), 
+               names_to = "Model", 
+               values_to = "Surprisal")
+
+dat_plot <- summarySE(dat_surprisals_long,
+                      measurevar = "Surprisal",  
+                      groupvars = c("Model", "cond_label"),
+                      na.rm = TRUE)
+dat_plot$Model <- gsub("^surprisal_", "", dat_plot$Model)
+
+ggplot(data = dat_plot,
+       aes(x = cond_label,
+           y = Surprisal,
+           color = Model,
+           group = interaction(cond_label, Model))) +
+  geom_point(size = 3, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = Surprisal - se, ymax = Surprisal + se), 
+              width = 0.05, 
+              linewidth = 1) +
+  xlab("Condition") +
+  ylab("Surprisal") +
+  ggtitle("Surprisal by Model and Condition") +
+  labs(color = "Model") +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(size = 14, face = "bold"),
+    axis.title.y = element_text(size = 14, face = "bold"),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.key.width = unit(1, "cm"),
+    strip.text = element_text(size = 16, face = "bold"),
+    plot.background = element_rect(fill = "white", color = NA)
+  )
+```
+
+### Surprisal for each item plots
+
+```{r surprisal-by-item-plots}
+plot_surprisal_items = FALSE
+if (plot_surprisal_items == TRUE) {
+
+  dat_plot <- summarySE(dat_surprisals_long,
+                        measurevar = "Surprisal",  
+                        groupvars = c("Model", "cond_label", "item", "noun"),
+                        na.rm = TRUE)
+  dat_plot$Model <- gsub("^surprisal_", "", dat_plot$Model)
+  
+  for (i in unique(dat_plot$item)) {
+    dat_plot_item <- dat_plot %>% 
+      filter(item == i)
+    item_no_char <- as.character(unique(dat_plot_item$item))
+      
+    p <- ggplot(data = dat_plot_item,
+           aes(x = cond_label,
+               y = Surprisal,
+               color = Model,
+               group = interaction(cond_label, Model))) +
+      geom_point(size = 3, show.legend = FALSE) +
+      xlab("Condition") +
+      ylab("Surprisal") +
+      ggtitle(paste0("Surprisal by Model and Condition: Item ", item_no_char)) +
+      labs(color = "Model") +
+      theme_minimal() +
+      theme(
+        axis.title.x = element_text(size = 14, face = "bold"),
+        axis.title.y = element_text(size = 14, face = "bold"),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        legend.key.width = unit(1, "cm"),
+        strip.text = element_text(size = 16, face = "bold"),
+        plot.background = element_rect(fill = "white", color = NA)
+      )
+    plot_title <- paste0("./item_surprisal_plots/surprisal_item_", as.character(i), ".png")
+    ggsave(plot_title, plot = p, width=12, height=5, dpi=320)
+  }
+}
+```
+
 
 ### GerPT2
 
