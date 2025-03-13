@@ -57,7 +57,7 @@ length(unique(dat$item))
 ```
 
 ```{r read-selected-stimuli}
-dat <- read.csv("nicenboim_stone_cloze_MANUALLY_REPLACED_TARGETS.csv", header=TRUE)
+dat <- read.csv("nicenboim_stone_items_MANUALLY_REPLACED_TARGETS.csv", header=TRUE)
 ```
 
 
@@ -101,16 +101,25 @@ Inspect the `inspect` items manually.
 
 # Check for duplicates
 
-Check the fixed items (with changed targets) for use of duplicate targets:
+Change the target nouns and stems and export:
 
 ```{r merge-keep-df}
 # Replace the targets
-keep_changed <- rbind(keep, fixed)
-keep_changed <- keep_changed %>% 
+dat_changed <- dat
+dat_changed <- dat_changed %>% 
   mutate(noun = if_else(noun_new != "", noun_new, noun))
-keep_changed <- keep_changed %>% 
-  mutate(clozenoun = if_else(clozenoun_new != "", clozenoun_new, clozenoun))
+dat_changed <- dat_changed %>% 
+  mutate(stemnoun = if_else(stemnoun_new != "", stemnoun_new, stemnoun))
+dat_changed <- dat_changed %>% 
+  filter(final_decision != "discard")
+write.csv(dat_changed, "stimuli_exp2_not_final.csv", row.names = FALSE)
+```
 
+Check the fixed items (with changed targets) for use of duplicate targets:
+
+```{r subset-df}
+keep_changed <- dat_changed %>% 
+  filter(item %in% c(keep$item, fixed$item))
 length(unique(keep_changed$item))
 ```
 
@@ -118,7 +127,7 @@ Stem nouns:
 
 ```{r check-duplicate-nouns-stems}
 duplicates_stems <- keep_changed %>%
-  dplyr::group_by(clozenoun) %>%
+  dplyr::group_by(stemnoun) %>%
   dplyr::summarize(occurrences = n(),
             items = paste(unique(item), collapse = ", "),
             conditions = paste(unique(cond_label), collapse = ", ")) %>%
@@ -127,7 +136,7 @@ duplicates_stems <- keep_changed %>%
 
 head(duplicates_stems, n = 20)
 cat(nrow(duplicates_stems), "stem nouns are used more than once in the stimuli.")
-unique(sort(duplicates_stems$clozenoun))
+unique(sort(duplicates_stems$stemnoun))
 
 more_than_twice <- sum(duplicates_stems$occurrences[duplicates_stems$occurrences > 2])
 cat(more_than_twice, "items contain stem nouns that are used more than twice.")
