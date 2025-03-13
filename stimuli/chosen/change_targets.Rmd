@@ -21,40 +21,18 @@ library("Rmisc")
 library(stringr)
 library(rlang)
 library(corrplot)
-
 rm(list = ls())
 ```
 
 
 # About
 
-This script changes targets in the Stone et al. 2023 experimental stimuli and adds the measures like LLM surprisal + target similarity metrics for the new targets.
+This script changes targets in the Stone et al. 2023 experimental stimuli.
 
 - Out of the 58 items that were removed because the condition b target used by Stone et al. 2023 was not attested in the Nicenboim et al. 2020 cloze responses, some items can be kept with different attested condition b target manually chosen from the Nicenboim et al. cloze data.
-- Out of the 8 items that were removed because the condition a target chosen by Stone et al. 2023 was not the modal cloze response (probably copy-paste errors), some items can be kept by changing the condition a target to the modal response (however, some did not have a modal response). 
-- Out of the 158 Stone et al. items in which the b targets where attested in the Nicenboim et al. 2020 cloze responses, some items nevertheless contain implausible b condition targets, others are synonyms/hyponyms. Some of these items are flagged to be removed, for others new target nouns are chosen for condition b.
-
+- Out of the 8 items that were removed because the condition a target chosen by Stone et al. 2023 was not the modal cloze response (probably copy-paste errors), 5 items can be kept by changing the condition a target to the modal response (however, some did not have a modal response).
 
 # Read in data
-
-```{r read-stimuli, eval = FALSE}
-dat <- read.csv("nicenboim_stone_cloze_corrected.csv", header=TRUE)
-
-dat <- dat %>% 
-  select(keep_item, item, cond_label,
-         sentence_target, #sentence, pre_critical, determiner, adj, 
-         noun, post_noun, continuation,
-         stemnoun, cloze.target,
-         clozenoun, cloze_stemnoun,
-         wordform_highest, cloze_wordform_highest,
-         wordform_other, cloze_wordform_other,
-         fasttext, surprisal_leo_13b)
-
-# write.csv(dat, "nicenboim_stone_cloze_MANUALSELECTION.csv", row.names = FALSE)
-
-# How many items are there in total?
-length(unique(dat$item))
-```
 
 ```{r read-selected-stimuli}
 dat <- read.csv("nicenboim_stone_items_MANUALLY_REPLACED_TARGETS.csv", header=TRUE)
@@ -79,13 +57,13 @@ summary(fixed$noun == fixed$wordform_highest)
 cat(length(unique(fixed$item)), "items could additionally be fixed.")
 cat(nrow(filter(fixed, !is.na(noun_new))), "nouns were replaced to fix the stimuli (in condition a and/or b).")
 
-discard <- dat %>% 
-  filter(keep_item == "discard") 
-cat(length(unique(discard$item)), "items could not be fixed.")
-
 synonyms <- dat %>% 
   filter(keep_item == "synonym")
 length(unique(synonyms$item))
+
+discard <- dat %>% 
+  filter(keep_item == "discard") 
+cat(length(unique(discard$item)), "items could not be fixed.")
 
 inspect <- dat %>% 
   filter(!(item %in% keep$item) & !(item %in% discard$item)) %>% 
@@ -96,10 +74,10 @@ unique(inspect$keep_item)
 write.csv(inspect, "critical_items_to_inspect_manually.csv", row.names = FALSE)
 ```
 
-Inspect the `inspect` items manually.
+Examine the `inspect` items manually.
 
 
-# Check for duplicates
+# Replace targets and export
 
 Change the target nouns and stems and export:
 
@@ -115,11 +93,15 @@ dat_changed <- dat_changed %>%
 write.csv(dat_changed, "stimuli_exp2_not_final.csv", row.names = FALSE)
 ```
 
+
+# Check for duplicates
+
 Check the fixed items (with changed targets) for use of duplicate targets:
 
 ```{r subset-df}
-keep_changed <- dat_changed %>% 
-  filter(item %in% c(keep$item, fixed$item))
+# keep_changed <- dat_changed %>% 
+#   filter(item %in% c(keep$item, fixed$item))
+keep_changed <- dat_changed
 length(unique(keep_changed$item))
 ```
 
