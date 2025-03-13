@@ -4971,7 +4971,7 @@ Beraterparticipant	item	condition	sentence	completion	time	first_word	stemnoun	w
 28	62	Constraining_a	Der Grenzpolizist vermutet Drogen in dem Koffer. Er holt einen großen	Hund und lässt ihn schnüffeln.	14697	Hund	Hund	Hund	Hund
 32	62	Constraining_a	Der Grenzpolizist vermutet Drogen in dem Koffer. Er holt einen großen	Hund.	13941	Hund	Hund	Hund	Hund
 36	62	Constraining_a	Der Grenzpolizist vermutet Drogen in dem Koffer. Er holt einen großen	Schäferhund.	9751	Schäferhund	Hund	Schäferhund	Schäferhund
-40	62	Constraining_a	Der Grenzpolizist vermutet Drogen in dem Koffer. Er holt einen großen	Vorschlughammer.	12017	Vorschlughammer	Hammer	Vorschlughammer	Vorschlughammer
+40	62	Constraining_a	Der Grenzpolizist vermutet Drogen in dem Koffer. Er holt einen großen	Vorschlughammer.	12017	Vorschlaghammer	Hammer	Vorschlaghammer	Vorschlaghammer
 44	62	Constraining_a	Der Grenzpolizist vermutet Drogen in dem Koffer. Er holt einen großen	Drogenspürhund	10441	Drogenspürhund	Hund	Drogenspürhund	Drogenspürhund
 4	62	Constraining_a	Der Grenzpolizist vermutet Drogen in dem Koffer. Er holt einen großen	Spürhund aus dem Auto.	8637	Spürhund	Hund	Spürhund	Spürhund
 52	62	Constraining_a	Der Grenzpolizist vermutet Drogen in dem Koffer. Er holt einen großen	100 Euro Schein aus seiner Geldbörse und versucht etwas zu kaufen.	36034	100	Schein	Schein	Schein
@@ -5393,7 +5393,7 @@ Beraterparticipant	item	condition	sentence	completion	time	first_word	stemnoun	w
 71	67	Constraining_a	Als ich auf den Markt gehen wollte, begann es plötzlich in Strömen zu regnen. Zum Glück hatte ich meinen guten	Regenmantel an	6205	Regenmantel	Mantel	Regenmantel	Regenmantel
 75	67	Constraining_a	Als ich auf den Markt gehen wollte, begann es plötzlich in Strömen zu regnen. Zum Glück hatte ich meinen guten	Schirm dabei	7228	Schirm	Schirm	Schirm	Schirm
 79	67	Constraining_a	Als ich auf den Markt gehen wollte, begann es plötzlich in Strömen zu regnen. Zum Glück hatte ich meinen guten	Regenschirm dabei	8331	Regenschirm	Schirm	Regenschirm	Regenschirm
-7	67	Constraining_a	Als ich auf den Markt gehen wollte, begann es plötzlich in Strömen zu regnen. Zum Glück hatte ich meinen guten	Schrim dabei	9728	Schrim	Schrim	Schrim	Schrim
+7	67	Constraining_a	Als ich auf den Markt gehen wollte, begann es plötzlich in Strömen zu regnen. Zum Glück hatte ich meinen guten	Schrim dabei	9728	Schirm	Schirm	Schirm	Schirm
 83	67	Constraining_a	Als ich auf den Markt gehen wollte, begann es plötzlich in Strömen zu regnen. Zum Glück hatte ich meinen guten	Regenschrim dabei	8173	Regenschirm	Schirm	Regenschirm	Regenschirm
 12	67	Constraining_b	Als ich auf den Markt gehen wollte, begann es plötzlich in Strömen zu regnen. Zum Glück hatte ich mein gutes	Hemd nicht an	16854	Hemd	Hemd	Hemd	Hemd
 16	67	Constraining_b	Als ich auf den Markt gehen wollte, begann es plötzlich in Strömen zu regnen. Zum Glück hatte ich mein gutes	Regencape	10204	Regencape	Cape	Regencape	Regencape
@@ -5791,7 +5791,7 @@ Beraterparticipant	item	condition	sentence	completion	time	first_word	stemnoun	w
 30	72	Constraining_a	Dennis möchte Yvonne heute Abend bitten, ihn im nächsten Sommer zu heiraten. Er hat bereits einen wunderschönen	Ring gekauft.	11343	Ring	Ring	Ring	Ring
 34	72	Constraining_a	Dennis möchte Yvonne heute Abend bitten, ihn im nächsten Sommer zu heiraten. Er hat bereits einen wunderschönen	Ring besorgt	12625	Ring	Ring	Ring	Ring
 38	72	Constraining_a	Dennis möchte Yvonne heute Abend bitten, ihn im nächsten Sommer zu heiraten. Er hat bereits einen wunderschönen	Ring besorgt.	8358	Ring	Ring	Ring	Ring
-42	72	Constraining_a	Dennis möchte Yvonne heute Abend bitten, ihn im nächsten Sommer zu heiraten. Er hat bereits einen wunderschönen	Blumenstrauss gekauft	11583	Blumenstrauss	Strauß	Blumenstrauss	Blumenstrauss
+42	72	Constraining_a	Dennis möchte Yvonne heute Abend bitten, ihn im nächsten Sommer zu heiraten. Er hat bereits einen wunderschönen	Blumenstrauss gekauft	11583	Blumenstrauß	Strauß	Blumenstrauß	Blumenstrauß
 46	72	Constraining_a	Dennis möchte Yvonne heute Abend bitten, ihn im nächsten Sommer zu heiraten. Er hat bereits einen wunderschönen	Ring gekauft.	8531	Ring	Ring	Ring	Ring
 100002	72	Constraining_a	Dennis möchte Yvonne heute Abend bitten, ihn im nächsten Sommer zu heiraten. Er hat bereits einen wunderschönen	Ort für den ANtrag gefunden	13019	Ort	Ort	Ort	Ort
 50	72	Constraining_a	Dennis möchte Yvonne heute Abend bitten, ihn im nächsten Sommer zu heiraten. Er hat bereits einen wunderschönen	Vortrag vorbereitet.	14807	Vortrag	Vortrag	Vortrag	Vortrag
@@ -10377,7 +10377,7 @@ Beraterparticipant	item	condition	sentence	completion	time	first_word	stemnoun	w
 38	128	Constraining_a	Miriam sah, dass ihre Nägel lang geworden waren. Sie nahm eine neue	Nagelschere und schnitt die Nägel.	10773	Nagelschere	Schere	Nagelschere	Nagelschere
 42	128	Constraining_a	Miriam sah, dass ihre Nägel lang geworden waren. Sie nahm eine neue	Nagelschere	8887	Nagelschere	Schere	Nagelschere	Nagelschere
 46	128	Constraining_a	Miriam sah, dass ihre Nägel lang geworden waren. Sie nahm eine neue	Nagelschere und schnitt sie ab.	13502	Nagelschere	Schere	Nagelschere	Nagelschere
-100002	128	Constraining_a	Miriam sah, dass ihre Nägel lang geworden waren. Sie nahm eine neue	Pfeile und kürzte sie.	14694	Pfeile	Pfeile	Pfeile	Pfeile
+100002	128	Constraining_a	Miriam sah, dass ihre Nägel lang geworden waren. Sie nahm eine neue	Pfeile und kürzte sie.	14694	Feile	Feile	Feile	Feile
 50	128	Constraining_a	Miriam sah, dass ihre Nägel lang geworden waren. Sie nahm eine neue	Schere.	6051	Schere	Schere	Schere	Schere
 54	128	Constraining_a	Miriam sah, dass ihre Nägel lang geworden waren. Sie nahm eine neue	Nagelschere und schnitt sie sich. 	14347	Nagelschere	Schere	Nagelschere	Nagelschere
 58	128	Constraining_a	Miriam sah, dass ihre Nägel lang geworden waren. Sie nahm eine neue	Schere.	9449	Schere	Schere	Schere	Schere
@@ -17001,7 +17001,7 @@ Beraterparticipant	item	condition	sentence	completion	time	first_word	stemnoun	w
 21	209	Constraining_a	Der Bergmann betritt den einsturzgefährdeten Tunnel. Er trägt einen gelben	Helm	12144	Helm	Helm	Helm	Helm
 25	209	Constraining_a	Der Bergmann betritt den einsturzgefährdeten Tunnel. Er trägt einen gelben	Helm	3880	Helm	Helm	Helm	Helm
 29	209	Constraining_a	Der Bergmann betritt den einsturzgefährdeten Tunnel. Er trägt einen gelben	Sicherheitshelm	9624	Sicherheitshelm	Helm	Sicherheitshelm	Sicherheitshelm
-33	209	Constraining_a	Der Bergmann betritt den einsturzgefährdeten Tunnel. Er trägt einen gelben	Sichherheitsumhang.	19035	Sichherheitsumhang	Umhang	Sichherheitsumhang	Sichherheitsumhang
+33	209	Constraining_a	Der Bergmann betritt den einsturzgefährdeten Tunnel. Er trägt einen gelben	Sichherheitsumhang.	19035	Sicherheitsumhang	Umhang	Sicherheitsumhang	Sicherheitsumhang
 37	209	Constraining_a	Der Bergmann betritt den einsturzgefährdeten Tunnel. Er trägt einen gelben	Schutzanzug.	7081	Schutzanzug	Anzug	Schutzanzug	Schutzanzug
 41	209	Constraining_a	Der Bergmann betritt den einsturzgefährdeten Tunnel. Er trägt einen gelben	Helm.	11259	Helm	Helm	Helm	Helm
 45	209	Constraining_a	Der Bergmann betritt den einsturzgefährdeten Tunnel. Er trägt einen gelben	Helm	7969	Helm	Helm	Helm	Helm
