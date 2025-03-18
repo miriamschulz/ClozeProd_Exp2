@@ -124,6 +124,9 @@ cloze_wordform_wide <- cloze_wordform %>%
     .groups = "drop"
   )
 
+write.csv(cloze_wordform_wide, "nicenboim_cloze_allanswers_wordform_wide.csv",
+          row.names = FALSE)
+
 # cloze <- cloze %>%
 #   dplyr::rename(clozenoun = stemnoun)
 
