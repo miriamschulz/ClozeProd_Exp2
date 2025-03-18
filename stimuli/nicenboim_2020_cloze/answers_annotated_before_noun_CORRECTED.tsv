@@ -318,7 +318,7 @@ Beraterparticipant	item	condition	sentence	completion	time	first_word	stemnoun	w
 45	5	Constraining_a	Die Hausfrau möchte die frisch gewaschene Wäsche glätten. Sie nimmt ihr kleines	Bügeleisen-	4845	Bügeleisen	Bügeleisen	Bügeleisen	Bügeleisen
 53	5	Constraining_a	Die Hausfrau möchte die frisch gewaschene Wäsche glätten. Sie nimmt ihr kleines	Bügeleisen und beginnt mit den Hemden	22010	Bügeleisen	Bügeleisen	Bügeleisen	Bügeleisen
 57	5	Constraining_a	Die Hausfrau möchte die frisch gewaschene Wäsche glätten. Sie nimmt ihr kleines	Bügeleisen und legt los.	8613	Bügeleisen	Bügeleisen	Bügeleisen	Bügeleisen
-5	5	Constraining_a	Die Hausfrau möchte die frisch gewaschene Wäsche glätten. Sie nimmt ihr kleines	bügeleisen und bügelt	16350	bügeleisen	Eisen	Bügeleisen	Bügeleisen
+5	5	Constraining_a	Die Hausfrau möchte die frisch gewaschene Wäsche glätten. Sie nimmt ihr kleines	bügeleisen und bügelt	16350	bügeleisen	Bügeleisen	Bügeleisen	Bügeleisen
 61	5	Constraining_a	Die Hausfrau möchte die frisch gewaschene Wäsche glätten. Sie nimmt ihr kleines	Bügeleisen	6597	Bügeleisen	Bügeleisen	Bügeleisen	Bügeleisen
 65	5	Constraining_a	Die Hausfrau möchte die frisch gewaschene Wäsche glätten. Sie nimmt ihr kleines	Bügeleisen	7841	Bügeleisen	Bügeleisen	Bügeleisen	Bügeleisen
 69	5	Constraining_a	Die Hausfrau möchte die frisch gewaschene Wäsche glätten. Sie nimmt ihr kleines	Bügeleisen.	11123	Bügeleisen	Bügeleisen	Bügeleisen	Bügeleisen
@@ -9141,7 +9141,7 @@ Beraterparticipant	item	condition	sentence	completion	time	first_word	stemnoun	w
 17	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch.	5745	Drehbuch	Drehbuch	Drehbuch	Drehbuch
 1	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Manusskript	11012	Manusskript	Manusskript	Manusskript	Manusskript
 21	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Frehbuch	3560	Drehbuch	Drehbuch	Drehbuch	Drehbuch
-25	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch	6502	Drehbuch	BuDrehbuchch	Drehbuch	Drehbuch
+25	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch	6502	Drehbuch	Drehbuch	Drehbuch	Drehbuch
 29	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Skripüt dafür	17396	Skript	Skript	Skript	Skript
 33	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch.	11101	Drehbuch	Drehbuch	Drehbuch	Drehbuch
 37	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch.	9736	Drehbuch	Drehbuch	Drehbuch	Drehbuch
@@ -9149,11 +9149,11 @@ Beraterparticipant	item	condition	sentence	completion	time	first_word	stemnoun	w
 45	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch	5616	Drehbuch	Drehbuch	Drehbuch	Drehbuch
 53	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Beschreibung seiner Charaktere	32910	Beschreibung	Beschreibung	Beschreibung	Beschreibung
 57	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	 Drehbuch.	4920	Drehbuch	Drehbuch	Drehbuch	Drehbuch
-5	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	drehbuch	9755	drehbuch	Buch	Drehbuch	Drehbuch
+5	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	drehbuch	9755	drehbuch	Drehbuch	Drehbuch	Drehbuch
 61	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch	5602	Drehbuch	Drehbuch	Drehbuch	Drehbuch
 65	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch	6334	Drehbuch	Drehbuch	Drehbuch	Drehbuch
 69	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch.	5735	Drehbuch	Drehbuch	Drehbuch	Drehbuch
-73	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch nieder.	6431	Drehbuch	BuDrehbuchch	Drehbuch	Drehbuch
+73	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch nieder.	6431	Drehbuch	Drehbuch	Drehbuch	Drehbuch
 77	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch	4166	Drehbuch	Drehbuch	Drehbuch	Drehbuch
 81	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch	7347	Drehbuch	Drehbuch	Drehbuch	Drehbuch
 9	113	Constraining_a	Der Schriftsteller möchte seinen Roman verfilmen lassen. Er schreibt ein detailliertes	Drehbuch.	7692	Drehbuch	Drehbuch	Drehbuch	Drehbuch
@@ -12744,12 +12744,12 @@ Beraterparticipant	item	condition	sentence	completion	time	first_word	stemnoun	w
 17	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Verkäuferin.	9136	Verkäuferin	Verkäuferin	Verkäuferin	Verkäuferin
 1	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Verkäuferin	7755	Verkäuferin	Verkäuferin	Verkäuferin	Verkäuferin
 21	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Verkäuferin	8111	Verkäuferin	Verkäuferin	Verkäuferin	Verkäuferin
-25	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Beraterin	18437	Berater	Berater	Berater	Berater
+25	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Beraterin	18437	Beraterin	Beraterin	Beraterin	Beraterin
 29	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Fachkraft zur Beratung	14226	Fachkraft	Kraft	Fachkraft	Fachkraft
 33	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Bedienung.	19675	Bedienung	Bedienung	Bedienung	Bedienung
 37	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Verkäuferin zur Beratung.	12771	Verkäuferin	Verkäuferin	Verkäuferin	Verkäuferin
 41	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Assistentin.	14795	Assistentin	Assistentin	Assistentin	Assistentin
-45	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Beraterin.	9049	Berater	Berater	Berater	Berater
+45	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Beraterin.	9049	Beraterin	Beraterin	Beraterin	Beraterin
 53	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Verkäuferin und fragte nach ihrer Meinung	18436	Verkäuferin	Verkäuferin	Verkäuferin	Verkäuferin
 57	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	Verkäuferin.	7805	Verkäuferin	Verkäuferin	Verkäuferin	Verkäuferin
 5	157	Constraining_a	Tom konnte sich in dem Geschäft nicht zwischen zwei Hosen entscheiden und brauchte Hilfe. Er suchte eine verfügbare	verkäuferin	16156	verkäuferin	Verkäuferin	Verkäuferin	Verkäuferin
