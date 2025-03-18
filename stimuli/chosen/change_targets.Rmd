@@ -77,32 +77,251 @@ write.csv(inspect, "critical_items_to_inspect_manually.csv", row.names = FALSE)
 Examine the `inspect` items manually.
 
 
-# Replace targets and export
+# Replace targets
 
 Change the target nouns and stems and export:
 
 ```{r merge-keep-df}
 # Replace the targets
 dat_changed <- dat
+dat_changed$noun_stone <- dat_changed$noun
+# dat_changed$stemnoun_stone <- dat_changed$stemnoun
 dat_changed <- dat_changed %>% 
-  mutate(noun = if_else(noun_new != "", noun_new, noun))
+  mutate(noun = if_else(noun_new != "", noun_new, noun),
+         noun_changed = if_else(noun_new != "", "yes", ""))
 dat_changed <- dat_changed %>% 
-  mutate(stemnoun = if_else(stemnoun_new != "", stemnoun_new, stemnoun))
+  mutate(stemnoun = if_else(stemnoun_new != "", stemnoun_new, stemnoun),
+         stemnoun_changed = if_else(stemnoun_new != "", "yes", ""))
 dat_changed <- dat_changed %>% 
   filter(final_decision != "discard")
-write.csv(dat_changed, "stimuli_exp2_not_final.csv", row.names = FALSE)
+
+n_changed_nouns <- dat_changed %>% 
+  filter(noun_changed == "yes") %>% 
+  unique() %>% 
+  nrow()
+n_changed_nouns_items <- dat_changed %>% 
+  filter(noun_changed == "yes") %>% 
+  select(item) %>%
+  unique() %>% 
+  nrow()
+cat(n_changed_nouns, "total word forms were changed in the items, concerning",
+    n_changed_nouns_items, "items.")
+
+n_changed_stems <- dat_changed %>% 
+  filter(stemnoun_changed == "yes") %>% 
+  unique() %>% 
+  nrow()
+n_changed_stems_items <- dat_changed %>% 
+  filter(stemnoun_changed == "yes") %>% 
+  select(item) %>%
+  unique() %>% 
+  nrow()
+cat(n_changed_stems, "total stems were changed in the items, concerning",
+    n_changed_stems_items, "items.")
 ```
 
 
-# Check for duplicates
+# Update the Cloze values
+
+## Update stem and highest word form Cloze
+
+Update the cloze values for the changed targets:
+
+```{r update-cloze}
+cloze_stemnoun <- read.csv("../nicenboim_2020_cloze/nicenboim_cloze_allanswers_stemnoun.csv", header = TRUE)
+cloze_wordform <- read.csv("../nicenboim_2020_cloze/nicenboim_cloze_allanswers_wordform_wide.csv", header = TRUE)
+
+# Update stem noun cloze
+dat_changed$cloze_stemnoun_WRONG <- dat_changed$cloze_stemnoun
+summary(as.factor(dat_changed$cloze_stemnoun_WRONG))
+dat_changed$cloze_stemnoun <- NULL
+dat_changed <- merge(dat_changed, cloze_stemnoun, all.x = TRUE)
+dat_changed <- dat_changed %>% 
+  arrange(item, cond_label)
+summary(round(dat_changed$cloze_stemnoun, 2) == dat_changed$cloze_stemnoun_WRONG)
+
+# Update highest word form
+dat_changed$wordform_highest_WRONG <- dat_changed$wordform_highest
+dat_changed$cloze_wordform_highest_WRONG <- dat_changed$cloze_wordform_highest
+dat_changed$wordform_other_WRONG <- dat_changed$wordform_other
+dat_changed$cloze_wordform_other_WRONG <- dat_changed$cloze_wordform_other
+dat_changed$wordform_highest <- NULL
+dat_changed$cloze_wordform_highest <- NULL
+dat_changed$wordform_other <- NULL
+dat_changed$cloze_wordform_other <- NULL
+cloze_wordform <- cloze_wordform %>% 
+  select(item, clozenoun,
+         wordform_highest, cloze_wordform_highest,
+         wordform_other, cloze_wordform_other) %>% 
+  dplyr::rename(stemnoun = clozenoun)
+dat_changed <- merge(dat_changed, cloze_wordform,
+                   by = c("item", "stemnoun"),
+                   all.x = TRUE,
+                   all.y = FALSE)
+dat_changed <- dat_changed %>% 
+  arrange(item, cond_label)
+```
+
+```{r manual-inspection-changed-targets}
+inspect_manually <- dat_changed %>% 
+  select(item, cond_label,
+         noun,
+         stemnoun,
+         wordform_highest, cloze_wordform_highest,
+         wordform_other, cloze_wordform_other,
+         noun_stone, stemnoun_stone,
+         cloze_stemnoun, cloze_stemnoun_WRONG)
+inspect_manually$equal <- inspect_manually$stemnoun == inspect_manually$stemnoun_stone
+inspect_manually$equal_cloze <- round(inspect_manually$cloze_stemnoun, 2) == inspect_manually$cloze_stemnoun_WRONG
+
+inspect_manually$noun_equal_highest_wordform <- inspect_manually$noun == inspect_manually$wordform_highest
+inspect_manually$noun_equal_stemnoun <- inspect_manually$noun == inspect_manually$stemnoun
+problems <- inspect_manually %>% 
+  filter(noun_equal_highest_wordform == FALSE & noun_equal_stemnoun == FALSE)
+```
+
+There is only one remaining seemingly problematic item: for item  64a, "Putztuch" was chosen as the target because "Brillenputztuch" + "Putztuch" together have a higher Cloze probability (0.1818 + 0.1818 = 0.3636) than the stem "Tuch" alone (0.2727).
+
+## Add chosen word form Cloze
+
+```{r add-wordform-cloze}
+cloze_wordform <- read.csv("../nicenboim_2020_cloze/nicenboim_cloze_allanswers_wordform.csv", header = TRUE)
+
+# Update highest word form
+cloze_wordform <- cloze_wordform %>% 
+  select(item, word, cloze_wordform) %>% 
+  dplyr::rename(noun = word)
+dat_changed <- merge(dat_changed, cloze_wordform,
+                   by = c("item", "noun"),
+                   all.x = TRUE,
+                   all.y = FALSE)
+dat_changed <- dat_changed %>% 
+  arrange(item, cond_label)
+
+dat_changed %>%
+  filter(is.na(cloze_wordform)) %>% 
+  select(item, cond_label, noun, stemnoun)
+
+# Set unattested word form cloze to zero
+dat_changed$cloze_wordform <- ifelse(is.na(dat_changed$cloze_wordform), 0,
+                                     dat_changed$cloze_wordform)
+```
+
+For the above items, the noun used was not attested as a word form (but instead included in a compound, for example, "Polster" occurred in "Stuhlpolster").
+
+## Check
+
+### Cloze values
+
+Check stem Cloze by condition: 
+
+```{r check-cloze-stems}
+low_cloze_a <- dat_changed %>% 
+  filter(cloze_stemnoun <= 0.2 & cond_label == "a") %>% 
+  select(item, cloze_stemnoun, stemnoun) %>% 
+  print()
+high_cloze_b <- dat_changed %>% 
+  filter(cloze_stemnoun > 0.2 & cond_label == "b") %>% 
+  select(item, cloze_stemnoun, stemnoun) %>% 
+  print()
+```
+
+```{r meancloze-stems}
+summarySE(dat_changed,
+          measurevar = "cloze_stemnoun",  
+          groupvars = c("cond_label"),
+          na.rm = TRUE)
+```
+
+Check word form Cloze by condition: 
+
+```{r check-cloze-wordforms}
+low_cloze_a <- dat_changed %>% 
+  filter(cloze_wordform <= 0.2 & cond_label == "a") %>% 
+  select(item, cloze_wordform, noun) %>% 
+  print()
+high_cloze_b <- dat_changed %>% 
+  filter(cloze_wordform > 0.2 & cond_label == "b") %>% 
+  select(item, cloze_wordform, noun) %>% 
+  print()
+```
+
+```{r meancloze-wordforms}
+summarySE(dat_changed,
+          measurevar = "cloze_wordform",  
+          groupvars = c("cond_label"),
+          na.rm = TRUE)
+```
+
+### Comparisons
+
+```{r compare-changes}
+summary(dat_changed$stemnoun == dat_changed$stemnoun_stone)
+summary(dat_changed$noun == dat_changed$noun_stone)
+summary(dat_changed$noun == dat_changed$wordform_highest)
+
+inspect_wordform_not_highest <- dat_changed %>% 
+  filter(noun != wordform_highest) %>% 
+  select(item, cond_label, stemnoun, cloze_stemnoun, noun, cloze_wordform,
+         wordform_highest, cloze_wordform_highest,
+         wordform_other, cloze_wordform_other)
+```
+
+```{r check-updates}
+summary(dat_changed$cloze_stemnoun_WRONG == round(dat_changed$cloze_stemnoun, 2))
+summary(dat_changed$wordform_highest_WRONG == dat_changed$wordform_highest)
+summary(dat_changed$wordform_other_WRONG == dat_changed$wordform_other)
+summary(dat_changed$cloze_wordform_other_WRONG == dat_changed$cloze_wordform_other)
+```
+
+```{r}
+x <- dat %>% 
+  filter(final_decision == "discard") %>% 
+  select(item, reason_to_discard)
+```
+
+
+# Export
+
+Rearrange the columns:
+
+```{r rearrange-cols}
+dat_changed_rearranged <- dat_changed %>% 
+  select(item, cond_label,
+         final_decision, keep_item,
+         list_stone,
+         context, sentence, pre_critical, determiner, adj,
+         noun, noun_new_otheroptions, noun_stone, noun_changed,
+         stemnoun, stemnoun_stone, stemnoun_changed,
+         post_noun, continuation,
+         question_stone, answer_stone,
+         cloze_wordform, cloze_stemnoun, cloze_target_stone,
+         wordform_highest, cloze_wordform_highest, 
+         wordform_other, cloze_wordform_other,
+         count_stemnoun, total_responses_stemnoun,
+         cosine_targetContext, entropy, 
+         fasttext_CHECK, surprisal_gerpt2_CHECK, surprisal_gerpt2_large_CHECK,
+         surprisal_leo_7b_CHECK, surprisal_leo_13b_CHECK)
+
+# Check which columns were eliminated
+colnames(dat_changed)[!colnames(dat_changed) %in% colnames(dat_changed_rearranged)]
+```
+
+```{r export}
+write.csv(dat_changed_rearranged, "stimuli_exp2_not_final.csv", row.names = FALSE)
+write.csv(filter(dat_changed_rearranged, final_decision == "backup"), "backup_inspect.csv", row.names = FALSE)
+```
+
+
+# Check & remove duplicates
+
+Nouns appearing more than 2-3x should be removed (a max. of 3x can be allowed, since all occurrences can then be placed in different lists).
 
 Check the fixed items (with changed targets) for use of duplicate targets:
 
 ```{r subset-df}
-# keep_changed <- dat_changed %>% 
-#   filter(item %in% c(keep$item, fixed$item))
-keep_changed <- dat_changed
-length(unique(keep_changed$item))
+keep_changed <- dat_changed %>% 
+  filter(!(final_decision %in% c("discard", "backup")))
 ```
 
 Stem nouns:
@@ -149,3 +368,30 @@ cat(more_than_twice, "items contain word forms that are used more than twice.")
 more_than_twice_keep_two <- sum(duplicates_wordforms$occurrences[duplicates_wordforms$occurrences > 2] - 2)
 cat(more_than_twice_keep_two, "of these should be removed if two occurrences of each target can be kept.")
 ```
+
+Subset items for easy checking:
+
+```{r}
+check_items <- keep_changed %>% 
+  # filter(item %in% c(117, 171, 182, 200)) %>%  # Hammer
+  # filter(item %in% c(3, 148, 203)) %>%   # Anzug
+  # filter(item %in% c(69, 250, 267)) %>%  # Brille
+  # filter(item %in% c(74, 124, 198)) %>%  # Eimer
+  # filter(item %in% c(66, 193, 209)) %>%  # Helm
+  # filter(item %in% c(74, 137, 234)) %>%  # Lappen
+  # filter(item %in% c(45, 176, 281)) %>%  # Messer
+  # filter(item %in% c(39, 136, 184)) %>%  # Taschenrechner
+  # filter(item %in% c(144, 151, 246)) %>%  # Tasse 
+  filter(item %in% c(27, 64, 175, 211, 251)) %>%  # Tuch (STEM)
+  # filter(item %in% c(1, 67, 114, 245)) %>%  # Schirm (STEM)
+  select(item, cond_label, final_decision, reason_to_discard, keep_item,
+         context, sentence, pre_critical, determiner, adj, noun, stemnoun)
+```
+
+Since the stems "Tuch" and "Schirm" appear in such different compound nouns, mostly with different word forms (Sonnenschirm-Regenschirm-Fallschirm-Schirm; Tuch-Putztuch-Taschentuch-Handtuch), up to 4-5 occurrences of each stem can be kept, as long as each identical word form is placed in a different list.
+
+```{r check-n-remaining-items}
+length(unique(keep_changed$item))
+```
+
+The remaining 158 items must be annotated for surprisal, word embeddings etc. and balanced for length and frequency by condition.
