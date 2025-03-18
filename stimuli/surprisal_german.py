@@ -66,12 +66,13 @@ def get_surprisal(seq):
             i += 1
 
     # convert back surprisals into probs for later use
-    probs = [1/(2**s) for s in surprisals]
+    # probs = [1/(2**s) for s in surprisals]
+    # probs = " ".join(map(str, probs))
+    target_surprisal = surprisals[-1]
+    surprisals = " ".join(map(str, surprisals))
+    print(f'Target: {words[-1]}, Surprisal: {str(round(target_surprisal, 5))}')
 
-    print(words[-1])
-    print(surprisals[-1])
-
-    return surprisals[-1]
+    return target_surprisal, surprisals
 
 # def BPE_split(word):
 #     encoded_w = tokenizer.encode(word) # type: list
@@ -79,16 +80,18 @@ def get_surprisal(seq):
 
 def get_surprisal_all(filename, chosen_model):
     df = pd.read_csv(f'./{filename}', sep=',', encoding='utf-8')
-    #df[f'surprisal'] = df['sentence_target'].apply(get_surprisal)
-    df['surprisal'] = pd.DataFrame(df['sentence_target'].apply(get_surprisal).tolist(), index=df.index)
+    print('\nObtaining full context surprisal...\n')
+    df[['target_surprisal', 'surprisals']] = pd.DataFrame(df['full_context'].apply(get_surprisal).tolist(), index=df.index)
+    print('\nObtaining target context surprisal...\n')
+    df[['target_surprisal_targetsentence', 'surprisals_targetsentence']] = pd.DataFrame(df['target_context'].apply(get_surprisal).tolist(), index=df.index)
     # df['BPE_split'] = df['Target'].apply(BPE_split)
-    out_filename = filename.rstrip('.csv') + '_surprisal_' + chosen_model + '.csv'
+    out_filename = f'{filename.rstrip('.csv')}_{chosen_model}.csv'
     df.to_csv(f'./{out_filename}',sep=';',encoding='utf-8',index=False)
 
 if __name__=='__main__':
 
     if len(sys.argv) != 3:
-        print(f"\nUSAGE:   {sys.argv[0]} <model> <stimmuli file>")
+        print(f"\nUSAGE:   {sys.argv[0]} <model> <stimuli file>")
         print(f"EXAMPLE: {sys.argv[0]} gerpt2-large stimuli.csv\n")
         sys.exit(1)
 
